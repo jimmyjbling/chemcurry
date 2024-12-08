@@ -19,7 +19,7 @@ class CurationNote(enum.StrEnum):
     """
 
     failed_curate = "compound failed curation"
-    flattened = "compound flattened"
+    stereochem_removed = "compound has stereochemistry removed"
     sanitized = "compound sanitized"
     neutralized = "compound neutralized"
     canonical = "compound made canonical"
@@ -59,7 +59,7 @@ class CurationIssue(enum.StrEnum):
     rdkit_failed = "rdkit failed to read molecule"
     failed_adding_Hs = "rdkit failed to add H to molecule"
     failed_gen_3d_conformer = "rdkit failed to generated a 3d pose for molecule"
-    flatten_failed = "compound failed to be flattened"
+    flatten_failed = "compound failed to have stereochem removed"
     sanitize_failed = "compound failed to be sanitized"
     neutralize_failed = "compound failed to be neutralized"
     canonical_failed = "compound failed to be canonicalized"
