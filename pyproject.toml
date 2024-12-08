@@ -1,0 +1,99 @@
+[tool.poetry]
+name = "mml-chemical-curate"
+version = "0.1.0"
+description = ""
+authors = ["James Wellnitz <wellnitz.james@gmail.com>"]
+readme = "README.md"
+
+classifiers = [
+    "Natural Language :: English",
+    "Operating System :: OS Independent"
+]
+packages = [
+    { include = "mml_chemical_curate", from = "src"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+rdkit = "^2024.3.6"
+func-timeout = "^4.3.5"
+pandas = "^2.2.3"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "~3.8.0"
+mypy = "^1.8.0"
+poetry = "^1.7.1"
+poetry-bumpversion = "^0.3.1"
+ruff = "^0.5.5"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "~7.2.0"
+pytest-cov = "~4.0.0"
+pytest-html = "^3.2.0"
+pytest-xdist = "^3.5.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.1.2"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry_bumpversion.file."src/mml_chemical_curate/__init__.py"]
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[tool.coverage.report]
+fail_under = 75
+
+[tool.pytest.ini_options]
+addopts = """
+    --color=yes
+    --junixml=test-results/unit-test-results.xml
+    --html=test-results/unit-tests-results.html
+    --dist=loadgroup
+"""
+markers = [
+    "unit: marks tests as unit tests",
+    "functional: marks test as functional tests",
+]
+testpaths = ["tests"]
+
+[tool.ruff]
+lint.select = [
+    "F",
+    "E",
+    "W",
+    "I001",
+    "I002",
+    "B",
+    "D"
+]
+src = ["src", "tests"]
+line-length = 99
+lint.ignore = [
+    "D400",
+    "D401",
+    "D200"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+[mypy]
