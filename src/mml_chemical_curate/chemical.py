@@ -79,7 +79,9 @@ class Chemical:
                 self.mol_history.append(deepcopy(self.mol))
         self.mol = new_mol
 
-    def update_label(self, new_label: Optional[Union[str, int, float]], note: CurationNote):
+    def update_label(
+        self, new_label: Optional[Union[str, int, float]], note: CurationNote, force: bool = False
+    ):
         """
         Update the label to a new mol label take the associate update note
 
@@ -93,8 +95,11 @@ class Chemical:
             the label value to be update the current label to
         note: CurationNote
             the note associated with this update
+        force: bool, default=False
+            force the attachment of the note and history tracking
+            even if no change in label detected
         """
-        if (new_label is not self.label) or (new_label != self.label):
+        if (new_label is not self.label) or (new_label != self.label) or force:
             self.notes.append(note)
             if self.track_history:
                 self.label_history.append(deepcopy(self.label))
