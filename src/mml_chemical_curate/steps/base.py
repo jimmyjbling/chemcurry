@@ -1,9 +1,10 @@
 """base classes and functions for curation steps"""
 
 import abc
-from typing import List
+from collections import defaultdict
+from typing import DefaultDict, List, Union
 
-from ..chemical import Chemical
+from ..chemical import BaseChemicalGroup, Chemical
 from ..flags import CurationIssue, CurationNote
 
 
@@ -111,10 +112,6 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
     dependency: set[str] = set()
     rank: int
 
-    @abc.abstractmethod
-    def _func(self, molecules: List[Chemical]) -> None:
-        raise NotImplementedError
-
     def __post_init__(self):
         """
         Called after __init__ finishes for object
@@ -175,9 +172,14 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
                 f"`self.issue` and `self.note` declared as None"
             )
 
-    def __call__(self, molecules: List[Chemical]) -> None:
+    @abc.abstractmethod
+    def _func(self, chemicals: Union[Chemical, BaseChemicalGroup]) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __call__(self, chemicals: Union[Chemical, BaseChemicalGroup]) -> None:
         """Makes CurationStep callable; calls the `_func` function"""
-        self._func(molecules)
+        raise NotImplementedError
 
     def __str__(self) -> str:
         """Return the name of the CurationStep class as a str"""
@@ -188,7 +190,7 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
         return self.__str__()
 
     # TODO add support for '|' (or) based dependencies and '&' (and) based
-    #  where you can specify specific sets of dependencies togther
+    #  where you can specify specific sets of dependencies together
     def missing_dependency(self, steps: list) -> set[str]:
         """
         Finds all the missing dependency from a given list of steps for this CurationsStep
@@ -205,3 +207,95 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
 
         """
         return self.dependency - set([str(step) for step in steps])
+
+
+class SingleCurationStep(CurationStep, abc.ABC):
+    """
+    The base abstract class for all CurationSteps that operate on individual chemicals.
+
+    This means that the curation function is independent of the information present in
+    other chemicals
+    """
+
+    @abc.abstractmethod
+    def _func(self, chemical: Chemical):  # type: ignore[override]
+        raise NotImplementedError
+
+    def __call__(self, chemicals: List[Chemical]):  # type: ignore[override]
+        """Makes CurationStep callable; calls the `_func` function"""
+        for chemical in chemicals:
+            self._func(chemical)
+
+
+class GroupCurationStep(CurationStep, abc.ABC):
+    """
+    The base abstract class for all CurationSteps that operate on groups of chemicals.
+
+    This means that the curation function is dependent of the information present in
+    other chemicals of the group
+    """
+
+    @abc.abstractmethod
+    def _func(self, chemical_group: BaseChemicalGroup):  # type: ignore[override]
+        raise NotImplementedError
+
+    def __call__(self, chemical_groups: List[BaseChemicalGroup]):  # type: ignore[override]
+        """Makes CurationStep callable; calls the `_func` function"""
+        for chemical_group in chemical_groups:
+            self._func(chemical_group)
+
+
+class GroupBy(abc.ABC):
+    """abstract curation function for steps that combine Chemicals into groups"""
+
+    group_class: type
+
+    @abc.abstractmethod
+    def _get_group_attribute(self, chemical: Chemical) -> Union[int, str, float]:
+        """
+        Convert Chemical obj into its group key
+
+        Parameters
+        ----------
+        chemical: Chemical
+            the chemical to get the group key for
+
+        Returns
+        -------
+        Union[int, str, float]
+        """
+        raise NotImplementedError
+
+    def __call__(self, chemicals: List[Chemical]) -> List[BaseChemicalGroup]:
+        """Call group-by on list of chemical groups"""
+        _hash_map: DefaultDict[Union[int, str, float], List[Chemical]] = defaultdict(list)
+
+        for chemical in chemicals:
+            _hash_map[self._get_group_attribute(chemical)].append(chemical)
+
+        return [self.group_class(group) for group in _hash_map.values()]
+
+
+class Aggregate:
+    """abstract class for steps that convert chemical groups to single chemicals"""
+
+    @abc.abstractmethod
+    def _get_keep_chemical(self, chemical_group: BaseChemicalGroup) -> Chemical:
+        """
+        take a chemical group and select a single chemical
+
+        Parameters
+        ----------
+        chemical_group: BaseChemicalGroup
+            the chemical group to aggregate
+
+        Returns
+        -------
+        Chemical
+            the single chemical to represent this group
+        """
+        raise NotImplementedError
+
+    def __call__(self, chemical_group: BaseChemicalGroup) -> Chemical:
+        """Aggregate chemical group into a single chemical"""
+        return self._get_keep_chemical(chemical_group)

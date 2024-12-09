@@ -40,38 +40,7 @@ class MolHashingMixin:
         self._mol_hash_cache = self._get_mol_hash(mol)
 
 
-class _BaseChemical:
-    """abstract base class for Chemicals"""
-
-    def __init__(self, idx: int):
-        """
-        Initialization
-
-        Parameters
-        ----------
-        idx: int
-            the index in whatever file or iterable object the chemical came from
-        """
-        self.idx = idx
-
-
-class InvalidChemical(_BaseChemical):
-    """A dummy chemical for when rdkit cannot load in a specific datapoint"""
-
-    def __init__(self, chemical_rep: str, idx: int):
-        """
-        Initialize a InvalidChemical object
-
-        Parameters
-        ----------
-        chemical_rep: str
-            the str of the chemical representation RDKit failed to load
-        """
-        super().__init__(idx)
-        self.chemical_rep = chemical_rep
-
-
-class Chemical(_BaseChemical, MolHashingMixin, SmilesHashingMixin):
+class Chemical(MolHashingMixin, SmilesHashingMixin):
     """
     Wrapper class for RDKit Mol objects
 
@@ -86,7 +55,6 @@ class Chemical(_BaseChemical, MolHashingMixin, SmilesHashingMixin):
     def __init__(
         self,
         mol: Mol,
-        idx: int,
         label: Optional[Union[str, int, float]] = None,
         track_history: bool = False,
     ):
@@ -97,14 +65,11 @@ class Chemical(_BaseChemical, MolHashingMixin, SmilesHashingMixin):
         ----------
         mol: Rdkit.Chem.Mol
             the rdkit mol for the object
-        idx: int
-            the index in whatever file or iterable object the chemical came from
         label: Optional[Union[str, int, float]]
             the label associated with the chemical (if there is one)
         track_history:
             track the history of molecule and label updates
         """
-        super().__init__(idx)
         self.mol = deepcopy(mol)
         self.label = deepcopy(label)
 
@@ -199,12 +164,12 @@ class Chemical(_BaseChemical, MolHashingMixin, SmilesHashingMixin):
             self.failed_curation = True
 
 
-class ChemicalGroup(MolHashingMixin):
+class BaseChemicalGroup:
     """A group of chemical objects"""
 
     def __init__(self, chemicals: List[Chemical]):
         """
-        Initialize a ChemicalGroup object
+        Initialize a BaseChemicalGroup object
 
         Parameters
         ----------
@@ -217,6 +182,16 @@ class ChemicalGroup(MolHashingMixin):
     def labels(self) -> List[Optional[Union[str, int, float]]]:
         """The labels of the chemicals in this group as a list"""
         return [chemical.label for chemical in self.chemicals]
+
+    @property
+    def passing_chemicals(self):
+        """Return a list of all the currently passing chemicals in the groups"""
+        return [chemical for chemical in self.chemicals if not chemical.failed_curation]
+
+    @property
+    def flagged_chemicals(self):
+        """Return a list of all the currently flagged chemicals in the group"""
+        return [chemical for chemical in self.chemicals if chemical.failed_curation]
 
     def update_mol(self, new_mol: Optional[Mol], note: CurationNote):
         """
@@ -278,7 +253,37 @@ class ChemicalGroup(MolHashingMixin):
             chemical.flag_issue(issue)
 
 
-class ChemicalSmilesGroup(ChemicalGroup, SmilesHashingMixin):
+class ChemicalMoleculeGroup(BaseChemicalGroup, MolHashingMixin):
+    """A group of chemical objects that share the same mol hash"""
+
+    def __init__(self, chemicals: List[Chemical]):
+        """
+        Initialize a ChemicalMoleculeGroup object
+
+        Parameters
+        ----------
+        chemicals: List[Chemical]
+            a list of chemical objects to be in the group
+        """
+        super().__init__(chemicals)
+
+        self._cache_mol_hash(self.chemicals[0].mol)
+
+        # check that group is valid
+        for chemical in self.chemicals:
+            chemical._cache_mol_hash(chemical.mol)
+            if chemical._mol_hash_cache != self._mol_hash_cache:
+                raise ValueError(
+                    f"ChemicalSmilesGroup must have all chemical share the same smiles hash;"
+                    f"found '{chemical._mol_hash_cache}' and '{self._mol_hash_cache}'"
+                )
+
+    def get_group_mol_hash(self) -> int:
+        """Get the SMILES shared by the whole group"""
+        return self._mol_hash_cache
+
+
+class ChemicalSmilesGroup(BaseChemicalGroup, SmilesHashingMixin):
     """A group of chemical objects that all share the same SMILES hash"""
 
     def __init__(self, chemicals: List[Chemical]):
