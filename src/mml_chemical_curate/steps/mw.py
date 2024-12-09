@@ -3,10 +3,10 @@
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 
 from ..flags import CurationIssue
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
-class CurateMW(CurationStep):
+class CurateMW(SingleCurationStep):
     """remove compounds with molecular weight above or below some cutoff"""
 
     def __init__(self, min_mw: float = 1, max_mw: float = float("inf")):

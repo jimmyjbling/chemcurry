@@ -5,10 +5,10 @@ from copy import deepcopy
 from rdkit.Chem.rdmolops import RemoveStereochemistry
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
-class CurateRemoveStereochem(CurationStep):
+class CurateRemoveStereochem(SingleCurationStep):
     """Removes stereochemistry from compounds"""
 
     def __init__(self):

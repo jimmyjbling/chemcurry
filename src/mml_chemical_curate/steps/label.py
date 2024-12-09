@@ -5,10 +5,10 @@ from typing import Any, Callable
 import pandas as pd
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep, CurationStepError
+from .base import CurationStepError, SingleCurationStep
 
 
-class CurateMissingLabel(CurationStep):
+class CurateMissingLabel(SingleCurationStep):
     """flag compound with missing labels"""
 
     def __init__(self):
@@ -23,7 +23,7 @@ class CurateMissingLabel(CurationStep):
                 mol.flag_issue(self.issue)
 
 
-class CurateFillMissingLabel(CurationStep):
+class CurateFillMissingLabel(SingleCurationStep):
     """replace missing labels with a given value"""
 
     def __init__(self, fill_value: Any):
@@ -45,7 +45,7 @@ class CurateFillMissingLabel(CurationStep):
                 mol.flag_issue(self.issue)
 
 
-class CurateNumericalLabel(CurationStep):
+class CurateNumericalLabel(SingleCurationStep):
     """make labels numeric and flag compounds with non-numeric labels"""
 
     def __init__(self):
@@ -63,7 +63,7 @@ class CurateNumericalLabel(CurationStep):
                 mol.flag_issue(self.issue)
 
 
-class CurateFilterLabel(CurationStep):
+class CurateFilterLabel(SingleCurationStep):
     """filter compound based on labels and some custom filter function"""
 
     def __init__(self, filter_func: Callable):
@@ -88,7 +88,7 @@ class CurateFilterLabel(CurationStep):
                 mol.flag_issue(self.issue)
 
 
-class CurateBinarizeLabel(CurationStep):
+class CurateBinarizeLabel(SingleCurationStep):
     """convert numerical labels in binary (0, 1) class labels"""
 
     def __init__(self, threshold: float, greater: bool = True):

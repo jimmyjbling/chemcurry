@@ -5,7 +5,7 @@ from copy import deepcopy
 from rdkit.Chem import Mol, MolFromSmarts
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
 def neutralize_mol(mol: Mol) -> Mol:
@@ -44,7 +44,7 @@ def neutralize_mol(mol: Mol) -> Mol:
     return _mol
 
 
-class CurateNeutralize(CurationStep):
+class CurateNeutralize(SingleCurationStep):
     """make a charged molecule neutral"""
 
     def __init__(self):

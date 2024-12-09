@@ -7,7 +7,7 @@ from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveAllHs, RemoveHs
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep, check_for_boost_rdkit_error
+from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
 DEFAULT_REMOVE_HS_PARAMETERS = {
@@ -30,7 +30,7 @@ DEFAULT_REMOVE_HS_PARAMETERS = {
 }
 
 
-class CurateRemoveH(CurationStep):
+class CurateRemoveH(SingleCurationStep):
     """Remove only non-essential explicit hydrogen atoms"""
 
     def __init__(self, remove_hs_params: Optional[Dict[str, bool]] = None):
@@ -73,7 +73,7 @@ class CurateRemoveH(CurationStep):
                     raise e
 
 
-class CurateRemoveAllH(CurationStep):
+class CurateRemoveAllH(SingleCurationStep):
     """
     Remove all explicit hydrogen atoms, even if they are required
 

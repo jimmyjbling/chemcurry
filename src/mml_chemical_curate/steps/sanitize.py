@@ -3,10 +3,10 @@
 from rdkit.Chem.rdmolops import SANITIZE_NONE, SanitizeMol
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
-class CurateSanitize(CurationStep):
+class CurateSanitize(SingleCurationStep):
     """
     Uses rdkit to sanitize molecules
 

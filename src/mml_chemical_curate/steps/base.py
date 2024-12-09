@@ -71,7 +71,7 @@ class PostInitMeta(abc.ABCMeta, type):
         return instance
 
 
-class CurationStep(abc.ABC, metaclass=PostInitMeta):
+class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     """
     The base abstract class for all CurationSteps.
 
@@ -172,15 +172,6 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
                 f"`self.issue` and `self.note` declared as None"
             )
 
-    @abc.abstractmethod
-    def _func(self, chemicals: Union[Chemical, BaseChemicalGroup]) -> None:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __call__(self, chemicals: Union[Chemical, BaseChemicalGroup]) -> None:
-        """Makes CurationStep callable; calls the `_func` function"""
-        raise NotImplementedError
-
     def __str__(self) -> str:
         """Return the name of the CurationStep class as a str"""
         return str(self.__class__.__name__)
@@ -209,7 +200,7 @@ class CurationStep(abc.ABC, metaclass=PostInitMeta):
         return self.dependency - set([str(step) for step in steps])
 
 
-class SingleCurationStep(CurationStep, abc.ABC):
+class SingleCurationStep(BaseCurationStep, abc.ABC):
     """
     The base abstract class for all CurationSteps that operate on individual chemicals.
 
@@ -224,10 +215,11 @@ class SingleCurationStep(CurationStep, abc.ABC):
     def __call__(self, chemicals: List[Chemical]):  # type: ignore[override]
         """Makes CurationStep callable; calls the `_func` function"""
         for chemical in chemicals:
-            self._func(chemical)
+            if not chemical.failed_curation:
+                self._func(chemical)
 
 
-class GroupCurationStep(CurationStep, abc.ABC):
+class GroupCurationStep(BaseCurationStep, abc.ABC):
     """
     The base abstract class for all CurationSteps that operate on groups of chemicals.
 
@@ -242,10 +234,10 @@ class GroupCurationStep(CurationStep, abc.ABC):
     def __call__(self, chemical_groups: List[BaseChemicalGroup]):  # type: ignore[override]
         """Makes CurationStep callable; calls the `_func` function"""
         for chemical_group in chemical_groups:
-            self._func(chemical_group)
+            self._func(chemical_group.passing_chemicals)
 
 
-class GroupBy(abc.ABC):
+class GroupBy(BaseCurationStep, abc.ABC):
     """abstract curation function for steps that combine Chemicals into groups"""
 
     group_class: type
@@ -271,12 +263,13 @@ class GroupBy(abc.ABC):
         _hash_map: DefaultDict[Union[int, str, float], List[Chemical]] = defaultdict(list)
 
         for chemical in chemicals:
-            _hash_map[self._get_group_attribute(chemical)].append(chemical)
+            if not chemical.failed_curation:
+                _hash_map[self._get_group_attribute(chemical)].append(chemical)
 
         return [self.group_class(group) for group in _hash_map.values()]
 
 
-class Aggregate:
+class Aggregate(BaseCurationStep, abc.ABC):
     """abstract class for steps that convert chemical groups to single chemicals"""
 
     @abc.abstractmethod

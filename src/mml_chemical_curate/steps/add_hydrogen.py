@@ -3,10 +3,10 @@
 from rdkit.Chem import AddHs, Mol
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep, check_for_boost_rdkit_error
+from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
-class CurateAddH(CurationStep):
+class CurateAddH(SingleCurationStep):
     """
     Curation function that attempts to add explict hydrogen atoms to molecules
     """

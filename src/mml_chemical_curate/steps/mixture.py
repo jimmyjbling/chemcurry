@@ -4,10 +4,10 @@ from rdkit.Chem import GetMolFrags
 from rdkit.Chem.MolStandardize.rdMolStandardize import LargestFragmentChooser
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
-class CurateMixtures(CurationStep):
+class CurateMixtures(SingleCurationStep):
     """Flag compounds that have a mixture"""
 
     def __init__(self):
@@ -24,7 +24,7 @@ class CurateMixtures(CurationStep):
                 mol.flag_issue(self.issue)
 
 
-class CurateDemix(CurationStep):
+class CurateDemix(SingleCurationStep):
     """Extracts the largest component of a mixture as the new molecule"""
 
     def __init__(self):

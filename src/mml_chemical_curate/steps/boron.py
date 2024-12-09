@@ -3,10 +3,10 @@
 from rdkit.Chem import MolFromSmarts
 
 from ..flags import CurationIssue
-from .base import CurationStep
+from .base import SingleCurationStep
 
 
-class CurateBoron(CurationStep):
+class CurateBoron(SingleCurationStep):
     """Flags compounds that have Boron in them"""
 
     def __init__(self):

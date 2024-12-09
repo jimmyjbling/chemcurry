@@ -5,7 +5,7 @@ from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule, ETKDGv3
 
 from ..flags import CurationIssue, CurationNote
-from .base import CurationStep, check_for_boost_rdkit_error
+from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
 def _add_3d(mol: Mol, timeout: int = 10) -> Mol:
@@ -37,7 +37,7 @@ def _add_3d(mol: Mol, timeout: int = 10) -> Mol:
     return mol
 
 
-class CurateAdd3D(CurationStep):
+class CurateAdd3D(SingleCurationStep):
     """
     Curation function to add 3D conformer to molecules
 
