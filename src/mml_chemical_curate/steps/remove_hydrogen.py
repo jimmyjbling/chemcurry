@@ -6,7 +6,6 @@ from typing import Dict, Optional
 from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveAllHs, RemoveHs
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
@@ -49,8 +48,8 @@ class CurateRemoveH(SingleCurationStep):
         https://www.rdkit.org/docs/source/rdkit.Chem.rdmolops.html#rdkit.Chem.rdmolops.RemoveHsParameters
         """
         super().__init__()
-        self.issue = CurationIssue.failed_remove_hs
-        self.note = CurationNote.removed_unnecessary_hs
+        self.issue = "failed to remove non-essential explict hydrogen atoms"
+        self.note = "removed non-essential explicit hydrogen atoms"
         self.rank = 3
         self._load_remove_hs_params(remove_hs_params if remove_hs_params else {})
 
@@ -81,8 +80,8 @@ class CurateRemoveAllH(SingleCurationStep):
     """
 
     def __init__(self):
-        self.issue = CurationIssue.failed_remove_hs
-        self.note = CurationNote.removed_all_Hs
+        self.issue = "failed to remove all explict hydrogen atoms"
+        self.note = "removed all explict hydrogen atoms"
         self.rank = 3
 
     def _func(self, molecules):

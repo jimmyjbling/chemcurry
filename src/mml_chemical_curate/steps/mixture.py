@@ -3,7 +3,6 @@
 from rdkit.Chem import GetMolFrags
 from rdkit.Chem.MolStandardize.rdMolStandardize import LargestFragmentChooser
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep
 
 
@@ -12,7 +11,7 @@ class CurateMixtures(SingleCurationStep):
 
     def __init__(self):
         super().__init__()
-        self.issue = CurationIssue.mixture
+        self.issue = "chemical contains a mixture"
         self.dependency = {"CurateRemoveH|CurateRemoveAllH"}
         self.rank = 2
 
@@ -29,8 +28,8 @@ class CurateDemix(SingleCurationStep):
 
     def __init__(self):
         super().__init__()
-        self.issue = CurationIssue.mixture
-        self.note = CurationNote.demixed
+        self.issue = "failed to de-mix the chemical"
+        self.note = "de-mixed by picking largest chemical compound"
         self.rank = 2
 
     def _func(self, molecules):

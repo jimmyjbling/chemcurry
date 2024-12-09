@@ -4,16 +4,15 @@ from copy import deepcopy
 
 from rdkit.Chem.rdmolops import RemoveStereochemistry
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep
 
 
 class CurateRemoveStereochem(SingleCurationStep):
-    """Removes stereochemistry from compounds"""
+    """Removes stereochemistry from chemicals"""
 
     def __init__(self):
-        self.issue = CurationIssue.flatten_failed
-        self.note = CurationNote.stereochem_removed
+        self.issue = "failed to removed stereochemistry from chemical"
+        self.note = "all stereochemistry are removed from chemical"
         self.rank = 3
 
     def _func(self, molecules):

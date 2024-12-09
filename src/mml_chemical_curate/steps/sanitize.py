@@ -2,7 +2,6 @@
 
 from rdkit.Chem.rdmolops import SANITIZE_NONE, SanitizeMol
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep
 
 
@@ -17,8 +16,8 @@ class CurateSanitize(SingleCurationStep):
 
     def __init__(self):
         super().__init__()
-        self.issue = CurationIssue.sanitize_failed
-        self.note = CurationNote.sanitized
+        self.issue = "failed to sanitize chemical"
+        self.note = "chemical sanitized"
         self.rank = 3
 
     def _func(self, molecules):

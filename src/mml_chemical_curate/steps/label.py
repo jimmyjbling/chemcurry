@@ -4,7 +4,6 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from ..flags import CurationIssue, CurationNote
 from .base import CurationStepError, SingleCurationStep
 
 
@@ -12,7 +11,7 @@ class CurateMissingLabel(SingleCurationStep):
     """flag compound with missing labels"""
 
     def __init__(self):
-        self.issue = CurationIssue.missing_label
+        self.issue = "chemical has missing label"
         self.rank = 0
 
     def _func(self, molecules):
@@ -27,7 +26,6 @@ class CurateFillMissingLabel(SingleCurationStep):
     """replace missing labels with a given value"""
 
     def __init__(self, fill_value: Any):
-        self.note = CurationNote.filled_missing_label
         self.rank = 0
         self.fill_value = fill_value
 
@@ -35,6 +33,7 @@ class CurateFillMissingLabel(SingleCurationStep):
             raise CurationStepError(
                 f"missing fill value cannot also be a missing value: '{self.fill_value}'"
             )
+        self.note = f"filled missing label with {fill_value}"
 
     def _func(self, molecules):
         for mol in molecules:
@@ -49,8 +48,8 @@ class CurateNumericalLabel(SingleCurationStep):
     """make labels numeric and flag compounds with non-numeric labels"""
 
     def __init__(self):
-        self.issue = CurationIssue.non_numeric_label
-        self.note = CurationNote.label_made_numeric
+        self.issue = "chemical label could not be cast to numeric"
+        self.note = "chemical label made numeric"
         self.rank = 5
 
     def _func(self, molecules):
@@ -77,7 +76,7 @@ class CurateFilterLabel(SingleCurationStep):
             and return True or False based on some static rule
         """
         self.filter_func = filter_func
-        self.issue = CurationIssue.failed_custom_label_filter
+        self.issue = "chemical label filtered out by custom filter"
         self.rank = 6
 
     def _func(self, molecules):
@@ -111,7 +110,7 @@ class CurateBinarizeLabel(SingleCurationStep):
         self.threshold = threshold
         self.greater = greater
 
-        self.note = CurationNote.binarized_label
+        self.note = f"label was barbarized with threshold {threshold}"
         self.rank = 6
         self.dependency = {"CurateNumericalLabel"}
 

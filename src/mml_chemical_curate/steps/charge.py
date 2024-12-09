@@ -4,7 +4,6 @@ from copy import deepcopy
 
 from rdkit.Chem import Mol, MolFromSmarts
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep
 
 
@@ -49,8 +48,8 @@ class CurateNeutralize(SingleCurationStep):
 
     def __init__(self):
         super().__init__()
-        self.issue = CurationIssue.neutralize_failed
-        self.note = CurationNote.neutralized
+        self.issue = "failed to neutralize chemical"
+        self.note = "chemical neutralized"
         self.rank = 3
 
     def _func(self, molecules):

@@ -2,7 +2,6 @@
 
 from rdkit.Chem import AddHs, Mol
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
@@ -12,8 +11,8 @@ class CurateAddH(SingleCurationStep):
     """
 
     def __init__(self):
-        self.issue = CurationIssue.failed_adding_Hs
-        self.note = CurationNote.added_hs
+        self.issue = "failed to add explicit hydrogen atoms"
+        self.note = "added explicit hydrogen atoms"
         self.rank = 3
 
     def _func(self, molecules):

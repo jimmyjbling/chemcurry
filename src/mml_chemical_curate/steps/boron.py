@@ -2,7 +2,6 @@
 
 from rdkit.Chem import MolFromSmarts
 
-from ..flags import CurationIssue
 from .base import SingleCurationStep
 
 
@@ -11,7 +10,7 @@ class CurateBoron(SingleCurationStep):
 
     def __init__(self):
         super().__init__()
-        self.issue = CurationIssue.boron
+        self.issue = "contained a Boron atom"
         self.rank = 4
 
     def _func(self, molecules):

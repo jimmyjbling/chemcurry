@@ -2,7 +2,6 @@
 
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 
-from ..flags import CurationIssue
 from .base import SingleCurationStep
 
 
@@ -25,7 +24,6 @@ class CurateMW(SingleCurationStep):
             the maximum molecular weight to be considered
         """
         super().__init__()
-        self.issue = CurationIssue.wrong_mw
         self.rank = 4
         self.min_mw = min_mw
         self.max_mw = max_mw
@@ -37,6 +35,10 @@ class CurateMW(SingleCurationStep):
                 f"min_mw cannot be larger than man_mw; "
                 f"`min_mw`: {self.min_mw} `max_mw`: {self.max_mw}"
             )
+
+        self.issue = (
+            f"chemical had a molecular weight below " f"{self.min_mw} or above {self.max_mw}"
+        )
 
     def _func(self, molecules):
         for mol in molecules:

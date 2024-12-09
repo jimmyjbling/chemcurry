@@ -4,7 +4,6 @@ from func_timeout import FunctionTimedOut, func_timeout
 from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule, ETKDGv3
 
-from ..flags import CurationIssue, CurationNote
 from .base import SingleCurationStep, check_for_boost_rdkit_error
 
 
@@ -55,8 +54,8 @@ class CurateAdd3D(SingleCurationStep):
         timeout: int, default=10
             time to wait before conformer generation fails
         """
-        self.issue = CurationIssue.failed_gen_3d_conformer
-        self.note = CurationNote.generated_3d_conformer
+        self.issue = "failed to generate a 3D conformer"
+        self.note = "generated a 3D conformer using ETKDGv3"
         self.rank = 3
         self.timeout = timeout
         self.dependency = {"CurateAddH"}
@@ -69,8 +68,8 @@ class CurateAdd3D(SingleCurationStep):
                 mol.update_mol(_add_3d(mol.mol, self.timeout), self.note)
             except TypeError as e:
                 if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(CurationIssue.failed_gen_3d_conformer)
+                    mol.flag_issue(self.issue)
                 else:
                     raise e
             except FunctionTimedOut:
-                mol.flag_issue(CurationIssue.failed_gen_3d_conformer)
+                mol.flag_issue(self.issue)

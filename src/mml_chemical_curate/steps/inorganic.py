@@ -2,7 +2,6 @@
 
 from rdkit.Chem import MolFromSmarts
 
-from ..flags import CurationIssue
 from .base import SingleCurationStep
 
 
@@ -13,7 +12,7 @@ class CurateInorganic(SingleCurationStep):
     """Flags compounds that have inorganic atoms"""
 
     def __init__(self):
-        self.issue = CurationIssue.inorganic
+        self.issue = "chemical contained inorganic atoms"
         self.rank = 4
 
     def _func(self, molecules):
