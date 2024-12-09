@@ -5,7 +5,6 @@ from collections import defaultdict
 from typing import DefaultDict, List, Union
 
 from ..chemical import BaseChemicalGroup, Chemical
-from ..flags import CurationIssue, CurationNote
 
 
 def check_for_boost_rdkit_error(error_message: str) -> bool:
@@ -93,11 +92,13 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
     Attributes
     ----------
-    issue: CurationIssue
-        the associated curation issue to attached to mol that gets flagged
+    issue: str
+        the associated curation issue str to attached to mol that gets flagged
+        offer in format string if you need formating
         (None if no flagging occurs)
-    note: CurationNote
-        the associated CurationNote to attach to a mol that gets changed
+    note: str
+        the associated curation note str to attach to a mol that gets changed
+        offer in format string if you need formating
         (None if no change occurs)
     dependency: set[str], default=set()
         the set of __name__ attributes for the CurationSteps this
@@ -107,8 +108,8 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         must be a positive non-zero integer
     """
 
-    issue: CurationIssue
-    note: CurationNote
+    issue: str
+    note: str
     dependency: set[str] = set()
     rank: int
 
@@ -134,15 +135,14 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
         if hasattr(self, "issue"):
             _issue_is_none = self.issue is None
-            if not _issue_is_none and not isinstance(self.issue, CurationIssue):
+            if not _issue_is_none and not isinstance(self.issue, str):
                 if isinstance(self.issue, (list, tuple)):
                     raise CurationStepError(
-                        "CurationSteps can only handle a single "
-                        "`CurationIssue` instance, not multiple"
+                        "CurationSteps can only handle a single " "issue text, not multiple"
                     )
                 raise CurationStepError(
                     f"CurationSteps require that the `self.issue`"
-                    f" parameter is a CurationIssue enum; "
+                    f" parameter is a str; "
                     f"not a {type(self.issue)}"
                 )
         else:
@@ -150,15 +150,14 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
         if hasattr(self, "note"):
             _note_is_none = self.note is None
-            if not _note_is_none and not isinstance(self.note, CurationNote):
+            if not _note_is_none and not isinstance(self.note, str):
                 if isinstance(self.note, (list, tuple)):
                     raise CurationStepError(
-                        "CurationSteps can only handle a single "
-                        "`CurationNote` instance, not multiple"
+                        "CurationSteps can only handle a single " "note text, not multiple"
                     )
                 raise CurationStepError(
                     f"CurationSteps require that the `self.note`"
-                    f" parameter is a CurationNote enum; "
+                    f" parameter is a str; "
                     f"not a {type(self.note)}"
                 )
         else:
@@ -166,10 +165,10 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
         if _issue_is_none and _note_is_none:
             raise CurationStepError(
-                f"CurationSteps require that either `self.issue` or `"
-                f"self.note` attributes is not None; "
+                f"CurationSteps require that either the `self.issue` or `"
+                f"self.note` attribute is declared or not None; "
                 f"CurationStep '{self.__class__.__name__}' have both "
-                f"`self.issue` and `self.note` declared as None"
+                f"`self.issue` and `self.note` are undeclared or declared as None"
             )
 
     def __str__(self) -> str:
@@ -179,6 +178,14 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     def __repr__(self) -> str:
         """Return the str representation of the CurationStep class"""
         return self.__str__()
+
+    def get_note_text(self, *args) -> str:
+        """Get the note as a str with rendered format"""
+        return self.note.format(*args)
+
+    def get_issue_text(self, *args) -> str:
+        """Get the note as a str with rendered format"""
+        return self.issue.format(*args)
 
     # TODO add support for '|' (or) based dependencies and '&' (and) based
     #  where you can specify specific sets of dependencies together
@@ -266,7 +273,14 @@ class GroupBy(BaseCurationStep, abc.ABC):
             if not chemical.failed_curation:
                 _hash_map[self._get_group_attribute(chemical)].append(chemical)
 
-        return [self.group_class(group) for group in _hash_map.values()]
+        # tag all the groups with info about which group they are in
+        _groups: List[BaseChemicalGroup] = []
+        for i, chemicals in enumerate(_hash_map.values()):
+            group: BaseChemicalGroup = self.group_class(chemicals)
+            group.tag_note(self.get_note_text(str(i)))
+            _groups.append(group)
+
+        return _groups
 
 
 class Aggregate(BaseCurationStep, abc.ABC):
@@ -289,6 +303,12 @@ class Aggregate(BaseCurationStep, abc.ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, chemical_group: BaseChemicalGroup) -> Chemical:
+    def __call__(self, chemical_groups: List[BaseChemicalGroup]) -> List[Chemical]:
         """Aggregate chemical group into a single chemical"""
-        return self._get_keep_chemical(chemical_group)
+        _chemicals: List[Chemical] = []
+        for chemical_group in chemical_groups:
+            chem: Chemical = self._get_keep_chemical(chemical_group)
+            chem.tag_note(self.get_note_text(str(chemical_group.group_id)))
+            _chemicals.append(chem)
+
+        return _chemicals
