@@ -52,8 +52,5 @@ class CurateNeutralize(SingleCurationStep):
         self.note = "chemical neutralized"
         self.rank = 3
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            mol.update_mol(neutralize_mol(mol.mol), self.get_note_text())
+    def _func(self, chemical):
+        chemical.update_mol(neutralize_mol(chemical.mol), self.get_note_text())

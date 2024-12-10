@@ -13,9 +13,6 @@ class CurateBoron(SingleCurationStep):
         self.issue = "contained a Boron atom"
         self.rank = 4
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if mol.mol.HasSubstructMatch(MolFromSmarts("[#5]")):
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        if chemical.mol.HasSubstructMatch(MolFromSmarts("[#5]")):
+            chemical.flag_issue(self.get_issue_text())

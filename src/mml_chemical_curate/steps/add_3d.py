@@ -60,16 +60,13 @@ class CurateAdd3D(SingleCurationStep):
         self.timeout = timeout
         self.dependency = {"CurateAddH"}
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            try:
-                mol.update_mol(_add_3d(mol.mol, self.timeout), self.get_note_text())
-            except TypeError as e:
-                if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.get_issue_text())
-                else:
-                    raise e
-            except FunctionTimedOut:
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        try:
+            chemical.update_mol(_add_3d(chemical.mol, self.timeout), self.get_note_text())
+        except TypeError as e:
+            if check_for_boost_rdkit_error(str(e)):
+                chemical.flag_issue(self.get_issue_text())
+            else:
+                raise e
+        except FunctionTimedOut:
+            chemical.flag_issue(self.get_issue_text())

@@ -40,9 +40,6 @@ class CurateMW(SingleCurationStep):
             f"chemical had a molecular weight below " f"{self.min_mw} or above {self.max_mw}"
         )
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if not (self.min_mw <= CalcExactMolWt(mol.mol) <= self.max_mw):
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        if not (self.min_mw <= CalcExactMolWt(chemical.mol) <= self.max_mw):
+            chemical.flag_issue(self.get_issue_text())

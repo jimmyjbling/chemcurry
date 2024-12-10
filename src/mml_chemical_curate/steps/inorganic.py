@@ -15,9 +15,6 @@ class CurateInorganic(SingleCurationStep):
         self.issue = "chemical contained inorganic atoms"
         self.rank = 4
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if mol.mol.HasSubstructMatch(NON_ORGANIC):
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        if chemical.mol.HasSubstructMatch(NON_ORGANIC):
+            chemical.flag_issue(self.get_issue_text())

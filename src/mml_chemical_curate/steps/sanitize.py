@@ -20,10 +20,7 @@ class CurateSanitize(SingleCurationStep):
         self.note = "chemical sanitized"
         self.rank = 3
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            _flags = SanitizeMol(mol.mol)
-            if _flags != SANITIZE_NONE:
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        _flags = SanitizeMol(chemical.mol)
+        if _flags != SANITIZE_NONE:
+            chemical.flag_issue(self.get_issue_text())

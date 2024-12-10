@@ -3,7 +3,6 @@
 import importlib
 from typing import Dict, Optional
 
-from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveAllHs, RemoveHs
 
 from .base import SingleCurationStep, check_for_boost_rdkit_error
@@ -59,17 +58,16 @@ class CurateRemoveH(SingleCurationStep):
         for key, value in params.items():
             setattr(self.remove_hs_params, key, value)
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            try:
-                mol.update_mol(RemoveHs(Mol, self.remove_hs_params), self.get_note_text())
-            except TypeError as e:
-                if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.get_issue_text())
-                else:
-                    raise e
+    def _func(self, chemical):
+        try:
+            chemical.update_mol(
+                RemoveHs(chemical.mol, self.remove_hs_params), self.get_note_text()
+            )
+        except TypeError as e:
+            if check_for_boost_rdkit_error(str(e)):
+                chemical.flag_issue(self.get_issue_text())
+            else:
+                raise e
 
 
 class CurateRemoveAllH(SingleCurationStep):
@@ -84,14 +82,11 @@ class CurateRemoveAllH(SingleCurationStep):
         self.note = "removed all explict hydrogen atoms"
         self.rank = 3
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            try:
-                mol.update_mol(RemoveAllHs(Mol), self.get_note_text())
-            except TypeError as e:
-                if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.get_issue_text())
-                else:
-                    raise e
+    def _func(self, chemical):
+        try:
+            chemical.update_mol(RemoveAllHs(chemical.mol), self.get_note_text())
+        except TypeError as e:
+            if check_for_boost_rdkit_error(str(e)):
+                chemical.flag_issue(self.get_issue_text())
+            else:
+                raise e

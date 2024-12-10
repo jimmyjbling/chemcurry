@@ -15,10 +15,8 @@ class CurateRemoveStereochem(SingleCurationStep):
         self.note = "all stereochemistry are removed from chemical"
         self.rank = 3
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            _tmp = deepcopy(mol.mol)
-            RemoveStereochemistry(_tmp)  # this function is inplace for some reason
-            mol.update_mol(_tmp, self.get_note_text())
+    def _func(self, chemical):
+        # this rdkit function is inplace for some reason
+        _tmp = deepcopy(chemical.mol)
+        RemoveStereochemistry(_tmp)
+        chemical.update_mol(_tmp, self.get_note_text())
