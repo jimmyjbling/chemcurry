@@ -65,11 +65,11 @@ class CurateAdd3D(SingleCurationStep):
             if mol.failed_curation:
                 continue
             try:
-                mol.update_mol(_add_3d(mol.mol, self.timeout), self.note)
+                mol.update_mol(_add_3d(mol.mol, self.timeout), self.get_note_text())
             except TypeError as e:
                 if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.issue)
+                    mol.flag_issue(self.get_issue_text())
                 else:
                     raise e
             except FunctionTimedOut:
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())

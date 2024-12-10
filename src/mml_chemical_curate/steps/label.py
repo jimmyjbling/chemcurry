@@ -19,7 +19,7 @@ class CurateMissingLabel(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if pd.isna(mol.label):
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())
 
 
 class CurateFillMissingLabel(SingleCurationStep):
@@ -40,8 +40,8 @@ class CurateFillMissingLabel(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if pd.isna(mol.label):
-                mol.update_label(self.fill_value, self.note)
-                mol.flag_issue(self.issue)
+                mol.update_label(self.fill_value, self.get_note_text())
+                mol.flag_issue(self.get_issue_text())
 
 
 class CurateNumericalLabel(SingleCurationStep):
@@ -57,9 +57,9 @@ class CurateNumericalLabel(SingleCurationStep):
             if mol.failed_curation:
                 continue
             try:
-                mol.update_label(float(mol.label), self.note)
+                mol.update_label(float(mol.label), self.get_note_text())
             except ValueError:
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())
 
 
 class CurateFilterLabel(SingleCurationStep):
@@ -84,7 +84,7 @@ class CurateFilterLabel(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if not self.filter_func(mol.label):
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())
 
 
 class CurateBinarizeLabel(SingleCurationStep):

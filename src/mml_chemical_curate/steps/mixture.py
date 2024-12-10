@@ -20,7 +20,7 @@ class CurateMixtures(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if len(GetMolFrags(mol)) > 1:
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())
 
 
 class CurateDemix(SingleCurationStep):
@@ -37,4 +37,4 @@ class CurateDemix(SingleCurationStep):
         for mol in molecules:
             if mol.failed_curation:
                 continue
-            mol.update_mol(_chooser.choose(mol), self.note)
+            mol.update_mol(_chooser.choose(mol), self.get_note_text())

@@ -45,4 +45,4 @@ class CurateMW(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if not (self.min_mw <= CalcExactMolWt(mol.mol) <= self.max_mw):
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())

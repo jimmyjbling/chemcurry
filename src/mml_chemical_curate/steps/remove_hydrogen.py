@@ -64,10 +64,10 @@ class CurateRemoveH(SingleCurationStep):
             if mol.failed_curation:
                 continue
             try:
-                mol.update_mol(RemoveHs(Mol, self.remove_hs_params), self.note)
+                mol.update_mol(RemoveHs(Mol, self.remove_hs_params), self.get_note_text())
             except TypeError as e:
                 if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.issue)
+                    mol.flag_issue(self.get_issue_text())
                 else:
                     raise e
 
@@ -89,9 +89,9 @@ class CurateRemoveAllH(SingleCurationStep):
             if mol.failed_curation:
                 continue
             try:
-                mol.update_mol(RemoveAllHs(Mol), self.note)
+                mol.update_mol(RemoveAllHs(Mol), self.get_note_text())
             except TypeError as e:
                 if check_for_boost_rdkit_error(str(e)):
-                    mol.flag_issue(self.issue)
+                    mol.flag_issue(self.get_issue_text())
                 else:
                     raise e

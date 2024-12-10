@@ -26,4 +26,4 @@ class CurateSanitize(SingleCurationStep):
                 continue
             _flags = SanitizeMol(mol.mol)
             if _flags != SANITIZE_NONE:
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())

@@ -21,4 +21,4 @@ class CurateRemoveStereochem(SingleCurationStep):
                 continue
             _tmp = deepcopy(mol.mol)
             RemoveStereochemistry(_tmp)  # this function is inplace for some reason
-            mol.update_mol(_tmp, self.note)
+            mol.update_mol(_tmp, self.get_note_text())

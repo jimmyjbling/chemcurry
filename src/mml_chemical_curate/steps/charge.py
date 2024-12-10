@@ -56,4 +56,4 @@ class CurateNeutralize(SingleCurationStep):
         for mol in molecules:
             if mol.failed_curation:
                 continue
-            mol.update_mol(neutralize_mol(mol.mol), self.note)
+            mol.update_mol(neutralize_mol(mol.mol), self.get_note_text())

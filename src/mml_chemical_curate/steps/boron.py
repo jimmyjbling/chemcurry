@@ -18,4 +18,4 @@ class CurateBoron(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if mol.mol.HasSubstructMatch(MolFromSmarts("[#5]")):
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())

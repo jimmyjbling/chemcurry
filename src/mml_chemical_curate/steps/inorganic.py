@@ -20,4 +20,4 @@ class CurateInorganic(SingleCurationStep):
             if mol.failed_curation:
                 continue
             if mol.mol.HasSubstructMatch(NON_ORGANIC):
-                mol.flag_issue(self.issue)
+                mol.flag_issue(self.get_issue_text())
