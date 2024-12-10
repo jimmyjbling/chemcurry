@@ -14,12 +14,9 @@ class CurateMissingLabel(SingleCurationStep):
         self.issue = "chemical has missing label"
         self.rank = 0
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if pd.isna(mol.label):
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        if pd.isna(chemical.label):
+            chemical.flag_issue(self.get_issue_text())
 
 
 class CurateFillMissingLabel(SingleCurationStep):
@@ -35,13 +32,10 @@ class CurateFillMissingLabel(SingleCurationStep):
             )
         self.note = f"filled missing label with {fill_value}"
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if pd.isna(mol.label):
-                mol.update_label(self.fill_value, self.get_note_text())
-                mol.flag_issue(self.get_issue_text())
+    def _func(self, chemical):
+        if pd.isna(chemical.label):
+            chemical.update_label(self.fill_value, self.get_note_text())
+            chemical.flag_issue(self.get_issue_text())
 
 
 class CurateNumericalLabel(SingleCurationStep):
@@ -52,14 +46,13 @@ class CurateNumericalLabel(SingleCurationStep):
         self.note = "chemical label made numeric"
         self.rank = 5
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            try:
-                mol.update_label(float(mol.label), self.get_note_text())
-            except ValueError:
-                mol.flag_issue(self.get_issue_text())
+        self.dependency = {"CurateMissingLabel|CurateFillMissingLabel"}
+
+    def _func(self, chemical):
+        try:
+            chemical.update_label(float(chemical.label), self.get_note_text())
+        except ValueError:
+            chemical.flag_issue(self.get_issue_text())
 
 
 class CurateFilterLabel(SingleCurationStep):
@@ -79,12 +72,11 @@ class CurateFilterLabel(SingleCurationStep):
         self.issue = "chemical label filtered out by custom filter"
         self.rank = 6
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            if not self.filter_func(mol.label):
-                mol.flag_issue(self.get_issue_text())
+        self.dependency = {"CurateMissingLabel|CurateFillMissingLabel"}
+
+    def _func(self, chemical):
+        if not self.filter_func(chemical.label):
+            chemical.flag_issue(self.get_issue_text())
 
 
 class CurateBinarizeLabel(SingleCurationStep):
@@ -114,12 +106,13 @@ class CurateBinarizeLabel(SingleCurationStep):
         self.rank = 6
         self.dependency = {"CurateNumericalLabel"}
 
-    def _func(self, molecules):
-        for mol in molecules:
-            if mol.failed_curation:
-                continue
-            mol.update_label(
-                int(mol.label > self.threshold if self.greater else mol.label < self.threshold),
-                self.note,
-                force=True,
-            )
+    def _func(self, chemical):
+        chemical.update_label(
+            int(
+                chemical.label > self.threshold
+                if self.greater
+                else chemical.label < self.threshold
+            ),
+            self.note,
+            force=True,
+        )
