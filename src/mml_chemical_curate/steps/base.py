@@ -232,6 +232,11 @@ class GroupCurationStep(BaseCurationStep, abc.ABC):
 
     This means that the curation function is dependent of the information present in
     other chemicals of the group
+
+    This means that it is assumed a GroupBy is called first.
+    No need to list GroupBy in the self.dependency for the CurationStep,
+    the workflow already knows to check for this.
+    Only list a dependency if a specific GroupBy step is needed for this CurationStep.
     """
 
     @abc.abstractmethod
@@ -245,7 +250,9 @@ class GroupCurationStep(BaseCurationStep, abc.ABC):
 
 
 class GroupBy(BaseCurationStep, abc.ABC):
-    """abstract curation function for steps that combine Chemicals into groups"""
+    """
+    abstract curation function for steps that combine Chemicals into groups
+    """
 
     group_class: type
 
@@ -284,7 +291,13 @@ class GroupBy(BaseCurationStep, abc.ABC):
 
 
 class Aggregate(BaseCurationStep, abc.ABC):
-    """abstract class for steps that convert chemical groups to single chemicals"""
+    """
+    abstract class for steps that convert chemical groups to single chemicals
+
+    It is assumed that a GroupBy is called first.
+    No need to list it in the self.dependency for the CurationStep,
+    unless a specific GroupBy step is needed for this Aggregate CurationStep.
+    """
 
     @abc.abstractmethod
     def _get_keep_chemical(self, chemical_group: BaseChemicalGroup) -> Chemical:
