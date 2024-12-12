@@ -1,22 +1,36 @@
 """stereochemistry curation functions"""
 
-from copy import deepcopy
-
+from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveStereochemistry
 
-from .base import SingleCurationStep
+from .base import Update
 
 
-class CurateRemoveStereochem(SingleCurationStep):
-    """Removes stereochemistry from chemicals"""
+class RemoveStereochem(Update):
+    """
+    Removes all specified stereochemistry from molecules
+
+    Notes
+    -----
+    This converts compounds into racemic mixtures in the eyes of RDKIT
+
+    Attributes
+    ----------
+    issue : str
+        Description of issue related to the curation step
+    note : str
+        Description of what changes were made when a molecule was updated
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
+    """
 
     def __init__(self):
+        """Initialize the curation step"""
         self.issue = "failed to removed stereochemistry from chemical"
         self.note = "all stereochemistry are removed from chemical"
-        self.rank = 3
 
-    def _func(self, chemical):
+    def _update(self, mol: Mol) -> Mol:
         # this rdkit function is inplace for some reason
-        _tmp = deepcopy(chemical.mol)
-        RemoveStereochemistry(_tmp)
-        chemical.update_mol(_tmp, self.get_note_text())
+        RemoveStereochemistry(mol)
+        return mol

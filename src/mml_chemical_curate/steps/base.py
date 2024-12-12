@@ -1,10 +1,17 @@
 """base classes and functions for curation steps"""
 
 import abc
-from collections import defaultdict
-from typing import DefaultDict, List, Union
+import warnings
+from copy import deepcopy
+from typing import List, Optional
 
-from ..chemical import BaseChemicalGroup, Chemical
+from rdkit.Chem import Mol
+
+from ..molecule import Molecule
+
+
+DEFAULT_ISSUE = "Unspecified issue flagged by {} step"
+DEFAULT_NOTE = "Unspecified note flagged by {} step"
 
 
 def check_for_boost_rdkit_error(error_message: str) -> bool:
@@ -70,6 +77,87 @@ class PostInitMeta(abc.ABCMeta, type):
         return instance
 
 
+class NoteMixin:
+    """Mixin for adding a note message to a BaseCurationStep object"""
+
+    note: str = f"Unspecified note flagged by {__name__} step"
+
+    def get_note_text(self, *args) -> str:
+        """
+        Get the note as a str with rendered format
+
+        Parameters
+        ----------
+        *args
+            string format values to render into the note str
+            must appear in order they appear in the note str
+
+        Returns
+        -------
+        str
+        """
+        return self.note.format(*args)
+
+
+class IssueMixin:
+    """Mixin for adding a issue message to a BaseCurationStep object"""
+
+    issue: str = f"Unspecified issue flagged by {__name__} step"
+
+    def get_issue_text(self, *args) -> str:
+        """
+        Get the issue as a str with rendered format
+
+        Parameters
+        ----------
+        *args
+            string format values to render into the issue str
+            must appear in order they appear in the issue str
+
+        Returns
+        -------
+        str
+        """
+        return self.issue.format(*args)
+
+
+# class NotetakingMeta(type, metaclass=abc.ABCMeta):
+#     """
+#     Metaclass that dynamically attaches note taking related mixins based on attributes
+#
+#     Looks for these attributes as members of the class.
+#     This is because when Curation class are defined, it is required that
+#     issues and notes are defined as class annotations/attributes *not*
+#     in the class __init__.
+#     This Meta class checks for this as well, and will throw an exception
+#     if this is not the case.
+#     """
+#     def __call__(cls, *args, **kwargs):
+#         """dynamically assign note taking mixins to class if needed"""
+#         _attributes = [_[1] for _ in inspect.getmembers(cls)]
+#
+#         _cls = deepcopy(cls)
+#         if "note" in _attributes:
+#             _cls = type(cls.__name__, (NoteMixin, cls), dict(cls.__dict__))
+#
+#         if "issue" in _attributes:
+#             _cls = type(cls.__name__, (IssueMixin, cls), dict(cls.__dict__))
+#
+#         _instance = _cls(*args, **kwargs)
+#
+#         if hasattr(_instance, "issue") and "issue" not in _attributes:
+#             raise CurationStepError(
+#                 f"`issue` must be defined as a class annotation, not in `__init__`;"
+#                 f" see 'Defining Curation Steps' in the docs for more information"
+#             )
+#
+#         if hasattr(_instance, "note") and "note" not in _attributes:
+#             raise CurationStepError(
+#                 f"`note` must be defined as a class annotation, not in `__init__`;"
+#                 f" see 'Defining Curation Steps' in the docs for more information"
+#             )
+
+
 class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     """
     The base abstract class for all CurationSteps.
@@ -77,7 +165,7 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     On a high level, a CurationStep is a callable object that
     wraps/implements some curation function.
 
-    All curation functions can flag chemicals with either an 'issue' or a 'note'.
+    All curation functions can flag molecules with either an 'issue' or a 'note'.
     Issue flags means the chemical 'failed' that curation
     step and should be removed from the final dataset.
     Note flags mean that the curation step has somehow altered the chemical
@@ -92,84 +180,58 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
     Attributes
     ----------
-    issue: str
-        the associated curation issue str to attached to mol that gets flagged
-        offer in format string if you need formating
-        (None if no flagging occurs)
-    note: str
-        the associated curation note str to attach to a mol that gets changed
-        offer in format string if you need formating
-        (None if no change occurs)
     dependency: set[str], default=set()
         the set of __name__ attributes for the CurationSteps this
         CurationStep is dependent on
-    rank: int
-        the rank of this CurationStep (lower is higher priority)
-        must be a positive non-zero integer
     """
 
-    issue: str
-    note: str
     dependency: set[str] = set()
-    rank: int
 
     def __post_init__(self):
         """
         Called after __init__ finishes for object
 
-        This is primary to check that user defined CurationSteps are
+        This is primarily to check that user defined CurationSteps are
         valid and compatible within the CurationWorkflow
         """
-        if not hasattr(self, "rank"):
-            raise CurationStepError(
-                f"CurationSteps must declare a `self.rank` attribute; "
-                f"CurationStep '{self.__class__.__name__}' "
-                f"does not have a `self.rank` attribute"
-            )
-        if not isinstance(self.rank, int) or self.rank < 0:
-            raise CurationStepError(
-                f"CurationSteps require that the `self.rank` parameter is "
-                f"declared as a non-zero positive integer in the `__init__` method; "
-                f"CurationStep '{self.__class__.__name__}' invalidates this"
-            )
-
         if hasattr(self, "issue"):
-            _issue_is_none = self.issue is None
-            if not _issue_is_none and not isinstance(self.issue, str):
-                if isinstance(self.issue, (list, tuple)):
-                    raise CurationStepError(
-                        "CurationSteps can only handle a single " "issue text, not multiple"
-                    )
+            if not isinstance(self.issue, str):
                 raise CurationStepError(
                     f"CurationSteps require that the `self.issue`"
                     f" parameter is a str; "
                     f"not a {type(self.issue)}"
                 )
-        else:
-            _issue_is_none = True
+            else:
+                if self.issue == DEFAULT_ISSUE.format(self.__class__.__name__):
+                    warnings.warn(
+                        f"'issue' description for curation step {self.__class__.__name__} "
+                        f"was unset; using default description; "
+                        f"to stop warning, set the 'issue' attribute "
+                        f"to a description of the issue with the molecule",
+                        stacklevel=1,
+                    )
 
         if hasattr(self, "note"):
-            _note_is_none = self.note is None
-            if not _note_is_none and not isinstance(self.note, str):
-                if isinstance(self.note, (list, tuple)):
-                    raise CurationStepError(
-                        "CurationSteps can only handle a single " "note text, not multiple"
-                    )
+            if isinstance(self.note, str):
                 raise CurationStepError(
-                    f"CurationSteps require that the `self.note`"
-                    f" parameter is a str; "
+                    f"CurationSteps require that the `note` "
+                    f"attribute is a str; "
                     f"not a {type(self.note)}"
                 )
-        else:
-            _note_is_none = True
+            else:
+                if self.note == DEFAULT_NOTE.format(self.__class__.__name__):
+                    warnings.warn(
+                        f"'note' description for curation step {self.__class__.__name__} "
+                        f"was unset; using default description; "
+                        f"to stop warning, set the 'note' attribute "
+                        f"to a description of the update made to the molecule",
+                        stacklevel=1,
+                    )
 
-        if _issue_is_none and _note_is_none:
-            raise CurationStepError(
-                f"CurationSteps require that either the `self.issue` or `"
-                f"self.note` attribute is declared or not None; "
-                f"CurationStep '{self.__class__.__name__}' have both "
-                f"`self.issue` and `self.note` are undeclared or declared as None"
-            )
+    @abc.abstractmethod
+    def __call__(self, chemicals: List[Molecule]):
+        """Curation steps should be callable"""
+        raise NotImplementedError
 
     def __str__(self) -> str:
         """Return the name of the CurationStep class as a str"""
@@ -179,17 +241,9 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         """Return the str representation of the CurationStep class"""
         return self.__str__()
 
-    def get_note_text(self, *args) -> str:
-        """Get the note as a str with rendered format"""
-        return self.note.format(*args)
-
-    def get_issue_text(self, *args) -> str:
-        """Get the note as a str with rendered format"""
-        return self.issue.format(*args)
-
     # TODO add support for '|' (or) based dependencies and '&' (and) based
     #  where you can specify specific sets of dependencies together
-    def missing_dependency(self, steps: list) -> set[str]:
+    def missing_dependency(self, steps) -> set[str]:
         """
         Finds all the missing dependency from a given list of steps for this CurationsStep
 
@@ -207,121 +261,107 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         return self.dependency - set([str(step) for step in steps])
 
 
-class SingleCurationStep(BaseCurationStep, abc.ABC):
+class Filter(BaseCurationStep, IssueMixin, abc.ABC):
     """
-    The base abstract class for all CurationSteps that operate on individual chemicals.
+    The base abstract class for all curation steps that filter individual molecules
 
-    This means that the curation function is independent of the information present in
-    other chemicals
+    Notes
+    -----
+    This means that the curation function will only every flag molecules with issues.
+    It should not update or alter the molecule in anyway.
+    If it does, it should be a Update step instead.
+    Therefore, the `note` attribute should not be implemented for this class
+
+    Raises
+    ------
+    CurationStepError
+        if the curation function is not defined properly
     """
+
+    def __post_init__(self):
+        """Runs after __init__ finishes to check attributes are defined properly"""
+        if hasattr(self, "note"):
+            raise CurationStepError(
+                "Filter curation steps should not implement the 'note' attribute"
+            )
+
+        if not hasattr(self, "issue"):
+            raise CurationStepError("Filter curation steps must implement the 'issue' attribute")
+        super().__post_init__()
 
     @abc.abstractmethod
-    def _func(self, chemical: Chemical):  # type: ignore[override]
+    def _filter(self, mol: Mol) -> bool:
         raise NotImplementedError
 
-    def __call__(self, chemicals: List[Chemical]):  # type: ignore[override]
-        """Makes CurationStep callable; calls the `_func` function"""
-        for chemical in chemicals:
-            if not chemical.failed_curation:
-                self._func(chemical)
-
-
-class GroupCurationStep(BaseCurationStep, abc.ABC):
-    """
-    The base abstract class for all CurationSteps that operate on groups of chemicals.
-
-    This means that the curation function is dependent of the information present in
-    other chemicals of the group
-
-    This means that it is assumed a GroupBy is called first.
-    No need to list GroupBy in the self.dependency for the CurationStep,
-    the workflow already knows to check for this.
-    Only list a dependency if a specific GroupBy step is needed for this CurationStep.
-    """
-
-    @abc.abstractmethod
-    def _func(self, chemical_group: BaseChemicalGroup):  # type: ignore[override]
-        raise NotImplementedError
-
-    def __call__(self, chemical_groups: List[BaseChemicalGroup]):  # type: ignore[override]
-        """Makes CurationStep callable; calls the `_func` function"""
-        for chemical_group in chemical_groups:
-            self._func(chemical_group.passing_chemicals)
-
-
-class GroupBy(BaseCurationStep, abc.ABC):
-    """
-    abstract curation function for steps that combine Chemicals into groups
-    """
-
-    group_class: type
-
-    @abc.abstractmethod
-    def _get_group_attribute(self, chemical: Chemical) -> Union[int, str, float]:
+    def __call__(self, molecules: List[Molecule]):
         """
-        Convert Chemical obj into its group key
+        Makes Filter curation step callable; calls the `_filter` function
 
         Parameters
         ----------
-        chemical: Chemical
-            the chemical to get the group key for
+        molecules: list[Molecule]
+            molecules to filter
 
         Returns
         -------
-        Union[int, str, float]
+        filter_mask: list[bool]
+            as boolean mask of which molecules passed the filter
+            True means the molecule passed the filter, False means it did not
         """
-        raise NotImplementedError
-
-    def __call__(self, chemicals: List[Chemical]) -> List[BaseChemicalGroup]:
-        """Call group-by on list of chemical groups"""
-        _hash_map: DefaultDict[Union[int, str, float], List[Chemical]] = defaultdict(list)
-
-        for chemical in chemicals:
-            if not chemical.failed_curation:
-                _hash_map[self._get_group_attribute(chemical)].append(chemical)
-
-        # tag all the groups with info about which group they are in
-        _groups: List[BaseChemicalGroup] = []
-        for i, chemicals in enumerate(_hash_map.values()):
-            group: BaseChemicalGroup = self.group_class(chemicals)
-            group.tag_note(self.get_note_text(str(i)))
-            _groups.append(group)
-
-        return _groups
+        for molecule in molecules:
+            if not molecule.failed_curation:
+                if not self._filter(molecule.mol):
+                    molecule.flag_issue(self.get_issue_text())
 
 
-class Aggregate(BaseCurationStep, abc.ABC):
+class Update(BaseCurationStep, IssueMixin, NoteMixin, abc.ABC):
     """
-    abstract class for steps that convert chemical groups to single chemicals
+    The base abstract class for all curation steps that attempt to update/standardize molecules.
 
-    It is assumed that a GroupBy is called first.
-    No need to list it in the self.dependency for the CurationStep,
-    unless a specific GroupBy step is needed for this Aggregate CurationStep.
+    Will tag a note to any chemical that is altered by this step.
+    Not all molecules have to change, and notes will only be added
+    to the molecules that actually changed
+
+    Unfortunately, RDKit will sometimes alter molecules by updating them in place
+    This makes it hard to enable the history tracking of a molecule and recognize if
+    a molecule has undergone a change from its original state prior to the update.
+    To handle this, a hash of the binary encoding of a molecule is first taken.
+    This hash will then be compared to the hash of the returned molecule object.
+    This is different than checking if two SMILES are the same for a molecule.
+    It accounts for all properties attached to the molecule, including stereochemistry,
+    atom ordering, 3D conformers, etc.
+    If the hashes are not equal, the note will be attached to the compound.
+    If it is, no note will be attached
+
+    This means that the curation function will attempt to alter the molecule in some way.
+    If it does not, and is just checking for properties, it should be a Filter step instead.
+    Therefore, the `note` attribute must be implemented for this class
+
+    Update curation steps can also have and `issue` attribute. This will get used only if
+    the result of `update` is None, which means whatever update was attempted somehow failed
+    for a rdkit related reason (like the function timed out or failed to converge).
+    In this case, the compound should be flag for removal as it could be missing the update,
+    for example if `Add3DConformer` fails to converge, then this molecule will lack a 3D conformer.
+    In this case we want to remove it as downstream it is rightfully assumed that
+    the molecule has a 3D Conformer, which could cause an un-handled exceptions to be raised.
     """
+
+    def __post_init__(self):
+        """Runs after __init__ finishes to check attributes are defined properly"""
+        if not hasattr(self, "note"):
+            raise RuntimeError("Update curation steps must implement the 'note' attribute")
+        super().__post_init__()
 
     @abc.abstractmethod
-    def _get_keep_chemical(self, chemical_group: BaseChemicalGroup) -> Chemical:
-        """
-        take a chemical group and select a single chemical
-
-        Parameters
-        ----------
-        chemical_group: BaseChemicalGroup
-            the chemical group to aggregate
-
-        Returns
-        -------
-        Chemical
-            the single chemical to represent this group
-        """
+    def _update(self, mol: Mol) -> Optional[Mol]:
         raise NotImplementedError
 
-    def __call__(self, chemical_groups: List[BaseChemicalGroup]) -> List[Chemical]:
-        """Aggregate chemical group into a single chemical"""
-        _chemicals: List[Chemical] = []
-        for chemical_group in chemical_groups:
-            chem: Chemical = self._get_keep_chemical(chemical_group)
-            chem.tag_note(self.get_note_text(str(chemical_group.group_id)))
-            _chemicals.append(chem)
-
-        return _chemicals
+    def __call__(self, molecules: List[Mol]):
+        """Makes CurationStep callable; calls the `_func` function"""
+        for molecule in molecules:
+            if not molecule.failed_curation:
+                _new_mol = self._update(deepcopy(molecule.mol))
+                if _new_mol is not None:
+                    molecule.update_mol(_new_mol, self.get_note_text())
+                else:
+                    molecule.flag_issue(self.get_issue_text())

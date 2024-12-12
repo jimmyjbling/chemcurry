@@ -1,48 +1,33 @@
 """3d curation steps"""
 
+from typing import Optional
+
 from func_timeout import FunctionTimedOut, func_timeout
 from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule, ETKDGv3
 
-from .base import SingleCurationStep, check_for_boost_rdkit_error
+from .base import Update, check_for_boost_rdkit_error
 
 
-def _add_3d(mol: Mol, timeout: int = 10) -> Mol:
+class Add3D(Update):
     """
-    Given a rdkit Mol, generate a random energy minimized 3D conformer, inplace
+    Curation step to add 3D conformer to molecules
 
     Notes
     -----
-    Will timeout after 10 seconds and fail to generate a 3D conformer.
-    This is a limitation of RDKit sometimes hanging on this function call
-    Will return None if RDKit cannot make the 3D pose in the given time limit
+    Uses the ETKDGv3 torsional angle potentials to add a 3D conformer
+    to molecules. If the conformer generation exceeds the timeout duration
+    or fails due to an internal RDKit error, the molecule is flagged with an issue.
 
-    Parameters
+    Attributes
     ----------
-    mol: Mol
-        Mol to add 3D conformer to
-    timeout: int
-        time to wait before conformer generation fails
-
-    Returns
-    -------
-    new_mol: Mol
-    """
-    ps = ETKDGv3()
-    ps.useRandomCoords = True
-    func_timeout(timeout, EmbedMolecule, (mol, ps))
-    EmbedMolecule(mol, ps)
-    mol.GetConformer()
-    return mol
-
-
-class CurateAdd3D(SingleCurationStep):
-    """
-    Curation function to add 3D conformer to molecules
-
-    Notes
-    -----
-    Uses the ETKDGv3 torsional angle potentials to do this
+    issue : str
+        Description of issue related to the curation step
+    note : str
+        Description of what changes were made when a molecule was updated
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
     """
 
     def __init__(self, timeout: int = 10):
@@ -56,17 +41,24 @@ class CurateAdd3D(SingleCurationStep):
         """
         self.issue = "failed to generate a 3D conformer"
         self.note = "generated a 3D conformer using ETKDGv3"
-        self.rank = 3
         self.timeout = timeout
         self.dependency = {"CurateAddH"}
 
-    def _func(self, chemical):
+    def _update(self, mol: Mol) -> Optional[Mol]:
+        """Attempts to add 3D conformer to molecule; returns None if fails"""
         try:
-            chemical.update_mol(_add_3d(chemical.mol, self.timeout), self.get_note_text())
+            ps = ETKDGv3()
+            ps.useRandomCoords = True
+            func_timeout(self.timeout, EmbedMolecule, (mol, ps))
+            EmbedMolecule(mol, ps)
+            if len(mol.GetConformers()) == 0:
+                return None
+            else:
+                return mol
         except TypeError as e:
             if check_for_boost_rdkit_error(str(e)):
-                chemical.flag_issue(self.get_issue_text())
+                return None
             else:
                 raise e
         except FunctionTimedOut:
-            chemical.flag_issue(self.get_issue_text())
+            return None

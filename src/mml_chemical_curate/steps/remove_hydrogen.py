@@ -3,9 +3,11 @@
 import importlib
 from typing import Dict, Optional
 
-from rdkit.Chem.rdmolops import RemoveAllHs, RemoveHs
+from rdkit.Chem import Mol
+from rdkit.Chem.rdmolops import RemoveAllHs as RemoveAllHsRDKit
+from rdkit.Chem.rdmolops import RemoveHs as RemoveHsRDKit
 
-from .base import SingleCurationStep, check_for_boost_rdkit_error
+from .base import Update, check_for_boost_rdkit_error
 
 
 DEFAULT_REMOVE_HS_PARAMETERS = {
@@ -28,8 +30,20 @@ DEFAULT_REMOVE_HS_PARAMETERS = {
 }
 
 
-class CurateRemoveH(SingleCurationStep):
-    """Remove only non-essential explicit hydrogen atoms"""
+class RemoveHs(Update):
+    """
+    Remove only non-essential explicit hydrogen atoms from molecules
+
+    Attributes
+    ----------
+    issue : str
+        Description of issue related to the curation step
+    note : str
+        Description of what changes were made when a molecule was updated
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
+    """
 
     def __init__(self, remove_hs_params: Optional[Dict[str, bool]] = None):
         """
@@ -49,7 +63,6 @@ class CurateRemoveH(SingleCurationStep):
         super().__init__()
         self.issue = "failed to remove non-essential explict hydrogen atoms"
         self.note = "removed non-essential explicit hydrogen atoms"
-        self.rank = 3
         self._load_remove_hs_params(remove_hs_params if remove_hs_params else {})
 
     def _load_remove_hs_params(self, params: Dict[str, bool]):
@@ -58,23 +71,31 @@ class CurateRemoveH(SingleCurationStep):
         for key, value in params.items():
             setattr(self.remove_hs_params, key, value)
 
-    def _func(self, chemical):
+    def _update(self, mol: Mol) -> Optional[Mol]:
         try:
-            chemical.update_mol(
-                RemoveHs(chemical.mol, self.remove_hs_params), self.get_note_text()
-            )
+            return RemoveHsRDKit(mol, self.remove_hs_params)
         except TypeError as e:
             if check_for_boost_rdkit_error(str(e)):
-                chemical.flag_issue(self.get_issue_text())
+                return None
             else:
                 raise e
 
 
-class CurateRemoveAllH(SingleCurationStep):
+class RemoveAllHs(Update):
     """
     Remove all explicit hydrogen atoms, even if they are required
 
     DANGER this can create new molecules if you are not careful, use sparingly
+
+    Attributes
+    ----------
+    issue : str
+        Description of issue related to the curation step
+    note : str
+        Description of what changes were made when a molecule was updated
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
     """
 
     def __init__(self):
@@ -82,11 +103,11 @@ class CurateRemoveAllH(SingleCurationStep):
         self.note = "removed all explict hydrogen atoms"
         self.rank = 3
 
-    def _func(self, chemical):
+    def _update(self, mol: Mol) -> Optional[Mol]:
         try:
-            chemical.update_mol(RemoveAllHs(chemical.mol), self.get_note_text())
+            return RemoveAllHsRDKit(mol)
         except TypeError as e:
             if check_for_boost_rdkit_error(str(e)):
-                chemical.flag_issue(self.get_issue_text())
+                return None
             else:
                 raise e

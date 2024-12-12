@@ -1,18 +1,33 @@
 """boron curation functions"""
 
-from rdkit.Chem import MolFromSmarts
+from rdkit.Chem import Mol, MolFromSmarts
 
-from .base import SingleCurationStep
+from .base import Filter
 
 
-class CurateBoron(SingleCurationStep):
-    """Flags compounds that have Boron in them"""
+class FlagBoron(Filter):
+    """
+    Curation step to filter out compounds containing boron atoms.
+
+    Notes
+    -----
+    Searches for boron atoms based on element number.
+    This will detect any isotope of Boron.
+
+    Attributes
+    ----------
+    issue : str
+        Description of issue related to the curation step
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
+    """
 
     def __init__(self):
+        """Initialize the curation step"""
         super().__init__()
         self.issue = "contained a Boron atom"
-        self.rank = 4
 
-    def _func(self, chemical):
-        if chemical.mol.HasSubstructMatch(MolFromSmarts("[#5]")):
-            chemical.flag_issue(self.get_issue_text())
+    def _filter(self, mol: Mol) -> bool:
+        """Returns True if molecule contains boron atom"""
+        return mol.HasSubstructMatch(MolFromSmarts("[#5]"))

@@ -1,12 +1,23 @@
 """molecular weight based curation functions"""
 
+from rdkit.Chem import Mol
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 
-from .base import SingleCurationStep
+from .base import Filter
 
 
-class CurateMW(SingleCurationStep):
-    """remove compounds with molecular weight above or below some cutoff"""
+class FilterMW(Filter):
+    """
+    Flag compounds with molecular weight above or below some cutoff
+
+    Attributes
+    ----------
+    issue : str
+        Description of issue related to the curation step
+    dependency : set
+        Set containing the names of preceding required steps.
+        If no dependency, will be an empty set.
+    """
 
     def __init__(self, min_mw: float = 1, max_mw: float = float("inf")):
         """
@@ -23,8 +34,6 @@ class CurateMW(SingleCurationStep):
         max_mw: float, default=inf
             the maximum molecular weight to be considered
         """
-        super().__init__()
-        self.rank = 4
         self.min_mw = min_mw
         self.max_mw = max_mw
 
@@ -40,6 +49,6 @@ class CurateMW(SingleCurationStep):
             f"chemical had a molecular weight below " f"{self.min_mw} or above {self.max_mw}"
         )
 
-    def _func(self, chemical):
-        if not (self.min_mw <= CalcExactMolWt(chemical.mol) <= self.max_mw):
-            chemical.flag_issue(self.get_issue_text())
+    def _filter(self, mol: Mol) -> bool:
+        """Returns True if molecular weight is within bounds"""
+        return self.min_mw <= CalcExactMolWt(mol) <= self.max_mw
