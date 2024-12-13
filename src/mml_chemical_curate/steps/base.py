@@ -3,7 +3,7 @@
 import abc
 import warnings
 from copy import deepcopy
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from rdkit.Chem import Mol
 
@@ -229,7 +229,7 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
                     )
 
     @abc.abstractmethod
-    def __call__(self, chemicals: List[Molecule]):
+    def __call__(self, chemicals: List[Molecule]) -> Tuple[int, int]:
         """Curation steps should be callable"""
         raise NotImplementedError
 
@@ -274,25 +274,34 @@ class Filter(BaseCurationStep, IssueMixin, abc.ABC):
     def _filter(self, mol: Mol) -> bool:
         raise NotImplementedError
 
-    def __call__(self, molecules: List[Molecule]):
+    def run_filter(self, molecules: List[Molecule]) -> Tuple[int, int]:
         """
-        Makes Filter curation step callable; calls the `_filter` function
+        Runs the Filter curation function
+
+        Will return the number of issues found that occurred
 
         Parameters
         ----------
-        molecules: list[Molecule]
-            molecules to filter
+        molecules: List[Molecule]
+            the molecules to run through the filter step
 
         Returns
         -------
-        filter_mask: list[bool]
-            as boolean mask of which molecules passed the filter
-            True means the molecule passed the filter, False means it did not
+        (num_updates, num_issues): Tuple[0, int]
+            the number of updates and issue that occurred during this step
+            filter steps always have 0 updates
         """
+        return self.__call__(molecules)
+
+    def __call__(self, molecules: List[Molecule]) -> Tuple[int, int]:
+        """Makes Filter curation step callable; calls the `_filter` function"""
+        _num_issues = 0
         for molecule in molecules:
             if not molecule.failed_curation:
                 if not self._filter(molecule.mol):
                     molecule.flag_issue(self.get_issue_text())
+                    _num_issues += 1
+        return 0, _num_issues
 
 
 class Update(BaseCurationStep, IssueMixin, NoteMixin, abc.ABC):
@@ -337,12 +346,36 @@ class Update(BaseCurationStep, IssueMixin, NoteMixin, abc.ABC):
     def _update(self, mol: Mol) -> Optional[Mol]:
         raise NotImplementedError
 
-    def __call__(self, molecules: List[Mol]):
+    def run_update(self, molecules: List[Molecule]) -> Tuple[int, int]:
+        """
+        Runs the Update curation function
+
+        Will return the number of updates that occurred
+
+        Parameters
+        ----------
+        molecules: List[Molecule]
+            the molecules to run through the update step
+
+        Returns
+        -------
+        (num_updates, num_issues): Tuple[int, int]
+            the number of updates and issue that occurred during this step
+        """
+        return self.__call__(molecules)
+
+    def __call__(self, molecules: List[Molecule]) -> Tuple[int, int]:
         """Makes CurationStep callable; calls the `_func` function"""
+        _update_count = 0
+        _issue_count = 0
         for molecule in molecules:
+            _updated: bool = False
             if not molecule.failed_curation:
                 _new_mol = self._update(deepcopy(molecule.mol))
                 if _new_mol is not None:
-                    molecule.update_mol(_new_mol, self.get_note_text())
+                    _updated = molecule.update_mol(_new_mol, self.get_note_text())
                 else:
                     molecule.flag_issue(self.get_issue_text())
+                    _issue_count += 1
+            _update_count += _updated
+        return _update_count, _issue_count
