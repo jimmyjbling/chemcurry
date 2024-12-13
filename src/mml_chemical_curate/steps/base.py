@@ -241,25 +241,6 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         """Return the str representation of the CurationStep class"""
         return self.__str__()
 
-    # TODO add support for '|' (or) based dependencies and '&' (and) based
-    #  where you can specify specific sets of dependencies together
-    def missing_dependency(self, steps) -> set[str]:
-        """
-        Finds all the missing dependency from a given list of steps for this CurationsStep
-
-        Parameters
-        ----------
-        steps: list[CurationStep]
-            the steps that you want to check for missing dependencies
-
-        Returns
-        -------
-        missing_dependencies: set[str]
-            the set of missing_dependencies (will be empty set is none are missing)
-
-        """
-        return self.dependency - set([str(step) for step in steps])
-
 
 class Filter(BaseCurationStep, IssueMixin, abc.ABC):
     """

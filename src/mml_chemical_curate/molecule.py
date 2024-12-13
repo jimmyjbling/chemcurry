@@ -28,12 +28,18 @@ class SmilesMixin:
     mol: Mol
 
     @classmethod
-    def from_smiles(cls, smiles: str, **kwargs) -> Optional[Self]:
+    def from_smiles(cls, smiles: str, **kwargs) -> Self:
         """
         Create an instance of the class from a SMILES string.
 
         This method parses the given SMILES string to create an RDKit Mol object
         and initializes the class with it.
+
+        Notes
+        -----
+        Any object that implements this mixin should be able to be
+        able to handle cases where a smiles gets rendered as `None`
+        by RDKit
 
         Parameters
         ----------
@@ -44,12 +50,10 @@ class SmilesMixin:
 
         Returns
         -------
-        Optional[Self]
-            An instance of the class if the SMILES string is valid, otherwise None.
+        Self
+            An instance of the class if the SMILES
         """
         _mol = MolFromSmiles(smiles)
-        if _mol is None:
-            return None
         return cls(mol=_mol, **kwargs)
 
     def get_smiles(self) -> str:
@@ -97,28 +101,41 @@ class Molecule(SmilesMixin):
 
     def __init__(
         self,
-        mol: Mol,
+        mol: Optional[Mol],
         track_history: bool = False,
     ):
         """
         Initialize a Molecule object
 
+        Notes
+        -----
+        If mol is None, will flag with issue
+        'rdkit failed to render Mol object'
+
         Parameters
         ----------
-        mol: Rdkit.Chem.Mol
+        mol: Optional[Rdkit.Chem.Mol]
             the rdkit mol for the object
+            if a None, will create a dummy mol and
+            automatically flag this molecule with an issue
         track_history:
             track the history of molecule and label updates
         """
-        self.mol = deepcopy(mol)
-
-        self.issue: Optional[str] = None
+        self.issue: str = ""
         self.notes: List[str] = []
-
-        self.failed_curation: bool = False
 
         self._track_history = track_history
         self.mol_history: List[Mol] = []
+
+        self.failed_curation: bool = False
+
+        self.mol: Mol
+        if mol is None:
+            self.mol = MolFromSmiles("")
+            self.failed_curation = True
+            self.issue = "rdkit failed to render Mol object"
+        else:
+            self.mol = mol
 
         self._current_hash = self._generate_mol_hash(self.mol)
 
