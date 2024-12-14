@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mml-chemical-curate"
+name = "chemcurry"
 version = "0.1.0a0"
 description = ""
 authors = ["James Wellnitz <wellnitz.james@gmail.com>"]
@@ -10,7 +10,7 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 packages = [
-    { include = "mml_chemical_curate", from = "src"}
+    { include = "chemcurry", from = "src"}
 ]
 
 [tool.poetry.dependencies]
@@ -52,7 +52,7 @@ priority = "primary"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry_bumpversion.file."src/mml_chemical_curate/__init__.py"]
+[tool.poetry_bumpversion.file."src/chemcurry/__init__.py"]
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
 
