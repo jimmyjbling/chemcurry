@@ -185,6 +185,12 @@ class Molecule(SmilesMixin):
         bool
             True if molecule updated, False if no update occurred
         """
+        if new_mol is None:
+            raise ValueError(
+                "if molecule becomes invalid, should be caught "
+                "and flagged with issue by curation step; 'None'"
+            )
+
         _hash = self._generate_mol_hash(new_mol)
         if _hash != self._current_hash:
             self.notes.append(note)
