@@ -3,7 +3,7 @@
 import abc
 import importlib
 from copy import deepcopy
-from typing import List, Optional, Self
+from typing import List, Optional, Self, Union
 
 from rdkit.Chem import Mol, MolFromSmiles
 
@@ -28,7 +28,7 @@ class SmilesMixin:
     mol: Mol
 
     @classmethod
-    def from_smiles(cls, smiles: str, **kwargs) -> Self:
+    def from_smiles(cls, id_: Union[int, str], smiles: str, **kwargs) -> Self:
         """
         Create an instance of the class from a SMILES string.
 
@@ -43,6 +43,8 @@ class SmilesMixin:
 
         Parameters
         ----------
+        id_: Union[int, str]
+            identifier for the molecule
         smiles: str
             The SMILES string representing the molecule.
         kwargs: dict
@@ -54,7 +56,7 @@ class SmilesMixin:
             An instance of the class if the SMILES
         """
         _mol = MolFromSmiles(smiles)
-        return cls(mol=_mol, **kwargs)
+        return cls(id_=id_, mol=_mol, **kwargs)
 
     def get_smiles(self) -> str:
         """
@@ -101,6 +103,7 @@ class Molecule(SmilesMixin):
 
     def __init__(
         self,
+        id_: Union[int, str],
         mol: Optional[Mol],
         track_history: bool = False,
     ):
@@ -109,11 +112,18 @@ class Molecule(SmilesMixin):
 
         Notes
         -----
+        `id_` uniqueness is *NOT* enforced
+        molecules can share the same id
+        this is used to help with tracking compounds
+        on the user side
+
         If mol is None, will flag with issue
         'rdkit failed to render Mol object'
 
         Parameters
         ----------
+        id_: Union[int, str]
+            identifier for the molecule
         mol: Optional[Rdkit.Chem.Mol]
             the rdkit mol for the object
             if a None, will create a dummy mol and
@@ -121,6 +131,8 @@ class Molecule(SmilesMixin):
         track_history:
             track the history of molecule and label updates
         """
+        self.id_: Union[int, str] = id_
+
         self.issue: str = ""
         self.notes: List[str] = []
 
