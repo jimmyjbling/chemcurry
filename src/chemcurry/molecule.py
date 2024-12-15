@@ -16,15 +16,13 @@ class SmilesMixin:
     """
 
     @abc.abstractmethod
-    def __init__(self, mol: Mol, **kwargs):
+    def __init__(self, id_: Union[int, str], mol: Mol, **kwargs):
         raise NotImplementedError
 
     # this is the smiles hashing function settings
     _smiles_hash_function = importlib.import_module(
         "rdkit.Chem.rdMolHash"
     ).HashFunction.CanonicalSmiles
-    # this is the hash function that operates on the mol object
-    _smiles_hasher = importlib.import_module("rdkit.Chem.rdMolHash").MolHash
     mol: Mol
 
     @classmethod
@@ -69,7 +67,9 @@ class SmilesMixin:
         str
             The canonical SMILES string.
         """
-        return self._smiles_hasher(self.mol, self._smiles_hash_function)
+        return importlib.import_module("rdkit.Chem.rdMolHash").MolHash(
+            self.mol, self._smiles_hash_function
+        )
 
     def has_same_smiles(self, other_mol: Mol) -> bool:
         """
@@ -86,7 +86,9 @@ class SmilesMixin:
         -------
         bool
         """
-        return self.get_smiles() == self._smiles_hasher(other_mol, self._smiles_hash_function)
+        return self.get_smiles() == importlib.import_module("rdkit.Chem.rdMolHash").MolHash(
+            other_mol, self._smiles_hash_function
+        )
 
 
 class Molecule(SmilesMixin):
