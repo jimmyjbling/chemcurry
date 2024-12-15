@@ -1,4 +1,4 @@
-"""test add 3d curation step"""
+"""test add 3d curation steps"""
 
 import pytest
 from rdkit.Chem.rdmolops import AddHs
@@ -23,6 +23,7 @@ def molecules():
     return _mols
 
 
+@pytest.mark.unit
 class TestAdd3D:
     """Test Add3D curation step"""
 

@@ -30,7 +30,7 @@ class FlagMixtures(Filter):
 
     def _filter(self, mol: Mol) -> bool:
         """Returns True if molecule contains a mixture"""
-        return len(GetMolFrags(mol)) > 1
+        return len(GetMolFrags(mol)) == 1
 
 
 class DemixLargestFragment(Update):

@@ -30,4 +30,4 @@ class FlagBoron(Filter):
 
     def _filter(self, mol: Mol) -> bool:
         """Returns True if molecule contains boron atom"""
-        return mol.HasSubstructMatch(MolFromSmarts("[#5]"))
+        return not mol.HasSubstructMatch(MolFromSmarts("[#5]"))

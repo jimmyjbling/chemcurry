@@ -1,4 +1,4 @@
-"""test add 3d curation step"""
+"""test add hydrogen curation steps"""
 
 import pytest
 from rdkit.Chem.rdmolfiles import MolFromSmiles
@@ -10,7 +10,7 @@ from chemcurry.steps import AddH
 
 @pytest.fixture
 def molecules():
-    """Fixture for molecules to test Add3D on"""
+    """Fixture for molecules"""
     return [
         Molecule("mol1", None),
         Molecule("mol2", AddHs(MolFromSmiles("CCCC"))),
@@ -18,12 +18,15 @@ def molecules():
     ]
 
 
+@pytest.mark.unit
 class TestAddH:
     """Test Add curation step"""
 
-    def test_add_3d(self, molecules):
-        """Test that Add3D works as expected"""
+    def test_add_h(self, molecules):
+        """Test that AddH works as expected"""
         step = AddH()
         num_notes, num_issues = step(molecules)
         assert num_notes == 1
         assert num_issues == 0
+
+        assert len(molecules[2].notes) == 1

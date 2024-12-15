@@ -67,7 +67,7 @@ class RemoveHs(Update):
 
     def _load_remove_hs_params(self, params: Dict[str, bool]):
         """Make the object pickle-able"""
-        self.remove_hs_params = importlib.import_module("rdkit.Chem.rdmolops").RemoveHsParameters
+        self.remove_hs_params = importlib.import_module("rdkit.Chem.rdmolops").RemoveHsParameters()
         for key, value in params.items():
             setattr(self.remove_hs_params, key, value)
 
@@ -79,6 +79,14 @@ class RemoveHs(Update):
                 return None
             else:
                 raise e
+
+    def get_remove_h_parameters(self) -> dict[str, bool]:
+        """Return the parameters used to remove hydrogens"""
+        return {
+            key: getattr(self.remove_hs_params, key)
+            for key in dir(self.remove_hs_params)
+            if not key.startswith("__")
+        }
 
 
 class RemoveAllHs(Update):
