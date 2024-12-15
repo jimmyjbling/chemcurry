@@ -55,32 +55,10 @@ class CurationStepError(Exception):
     pass
 
 
-class PostInitMeta(abc.ABCMeta, type):
-    """
-    Enables a '__post_init__' hook that is called after '__init__'
-
-    To help with error handling when defining new CurationSteps it would be nice
-    to enable some auto check that specific class attributes have been declared properly
-
-    But this requires that a "check" function is automatically called after initialization.
-    Generic python objects don't have this hook, so we can add it with a MetaClass
-
-    I generally tend to avoid meta classes because they are python black magic,
-    but this one is pretty simple and gives us the utility we want
-    """
-
-    def __call__(cls, *args, **kwargs):
-        """Add post-init hook"""
-        instance = super().__call__(*args, **kwargs)
-        if post := getattr(cls, "__post_init__", None):
-            post(instance, *args, **kwargs)
-        return instance
-
-
 class NoteMixin:
     """Mixin for adding a note message to a BaseCurationStep object"""
 
-    note: str = f"Unspecified note flagged by {__name__} step"
+    note: str = DEFAULT_NOTE.format(__name__)
 
     def get_note_text(self, *args) -> str:
         """
@@ -102,7 +80,7 @@ class NoteMixin:
 class IssueMixin:
     """Mixin for adding a issue message to a BaseCurationStep object"""
 
-    issue: str = f"Unspecified issue flagged by {__name__} step"
+    issue: str = DEFAULT_ISSUE.format(__name__)
 
     def get_issue_text(self, *args) -> str:
         """
@@ -121,41 +99,26 @@ class IssueMixin:
         return self.issue.format(*args)
 
 
-# class NotetakingMeta(type, metaclass=abc.ABCMeta):
-#     """
-#     Metaclass that dynamically attaches note taking related mixins based on attributes
-#
-#     Looks for these attributes as members of the class.
-#     This is because when Curation class are defined, it is required that
-#     issues and notes are defined as class annotations/attributes *not*
-#     in the class __init__.
-#     This Meta class checks for this as well, and will throw an exception
-#     if this is not the case.
-#     """
-#     def __call__(cls, *args, **kwargs):
-#         """dynamically assign note taking mixins to class if needed"""
-#         _attributes = [_[1] for _ in inspect.getmembers(cls)]
-#
-#         _cls = deepcopy(cls)
-#         if "note" in _attributes:
-#             _cls = type(cls.__name__, (NoteMixin, cls), dict(cls.__dict__))
-#
-#         if "issue" in _attributes:
-#             _cls = type(cls.__name__, (IssueMixin, cls), dict(cls.__dict__))
-#
-#         _instance = _cls(*args, **kwargs)
-#
-#         if hasattr(_instance, "issue") and "issue" not in _attributes:
-#             raise CurationStepError(
-#                 f"`issue` must be defined as a class annotation, not in `__init__`;"
-#                 f" see 'Defining Curation Steps' in the docs for more information"
-#             )
-#
-#         if hasattr(_instance, "note") and "note" not in _attributes:
-#             raise CurationStepError(
-#                 f"`note` must be defined as a class annotation, not in `__init__`;"
-#                 f" see 'Defining Curation Steps' in the docs for more information"
-#             )
+class PostInitMeta(abc.ABCMeta, type):
+    """
+    Enables a '__post_init__' hook that is called after '__init__'
+
+    To help with error handling when defining new CurationSteps it would be nice
+    to enable some auto check that specific class attributes have been declared properly
+
+    But this requires that a "check" function is automatically called after initialization.
+    Generic python objects don't have this hook, so we can add it with a MetaClass
+
+    I generally tend to avoid meta classes because they are python black magic,
+    but this one is pretty simple and gives us the utility we want
+    """
+
+    def __call__(cls, *args, **kwargs):
+        """Add post-init hook"""
+        instance = super().__call__(*args, **kwargs)
+        if post := getattr(cls, "__post_init__", None):
+            post(instance, *args, **kwargs)
+        return instance
 
 
 class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
@@ -197,22 +160,22 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         if hasattr(self, "issue"):
             if not isinstance(self.issue, str):
                 raise CurationStepError(
-                    f"CurationSteps require that the `self.issue`"
-                    f" parameter is a str; "
+                    f"CurationSteps require that the `issue` "
+                    f"attribute is a str; "
                     f"not a {type(self.issue)}"
                 )
             else:
                 if self.issue == DEFAULT_ISSUE.format(self.__class__.__name__):
                     warnings.warn(
                         f"'issue' description for curation step {self.__class__.__name__} "
-                        f"was unset; using default description; "
+                        f"was unset; using default issue description; "
                         f"to stop warning, set the 'issue' attribute "
                         f"to a description of the issue with the molecule",
                         stacklevel=1,
                     )
 
         if hasattr(self, "note"):
-            if isinstance(self.note, str):
+            if not isinstance(self.note, str):
                 raise CurationStepError(
                     f"CurationSteps require that the `note` "
                     f"attribute is a str; "
@@ -222,7 +185,7 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
                 if self.note == DEFAULT_NOTE.format(self.__class__.__name__):
                     warnings.warn(
                         f"'note' description for curation step {self.__class__.__name__} "
-                        f"was unset; using default description; "
+                        f"was unset; using default note description; "
                         f"to stop warning, set the 'note' attribute "
                         f"to a description of the update made to the molecule",
                         stacklevel=1,
@@ -265,9 +228,6 @@ class Filter(BaseCurationStep, IssueMixin, abc.ABC):
             raise CurationStepError(
                 "Filter curation steps should not implement the 'note' attribute"
             )
-
-        if not hasattr(self, "issue"):
-            raise CurationStepError("Filter curation steps must implement the 'issue' attribute")
         super().__post_init__()
 
     @abc.abstractmethod
@@ -335,12 +295,6 @@ class Update(BaseCurationStep, IssueMixin, NoteMixin, abc.ABC):
     In this case we want to remove it as downstream it is rightfully assumed that
     the molecule has a 3D Conformer, which could cause an un-handled exceptions to be raised.
     """
-
-    def __post_init__(self):
-        """Runs after __init__ finishes to check attributes are defined properly"""
-        if not hasattr(self, "note"):
-            raise RuntimeError("Update curation steps must implement the 'note' attribute")
-        super().__post_init__()
 
     @abc.abstractmethod
     def _update(self, mol: Mol) -> Optional[Mol]:
