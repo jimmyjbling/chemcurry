@@ -165,7 +165,7 @@ class Molecule(SmilesMixin):
         """Prevent track history from being changed after initialization of obj"""
         raise RuntimeError("'track_history' cannot be change after object initialization")
 
-    def update_mol(self, new_mol: Optional[Mol], note: str) -> bool:
+    def update_mol(self, new_mol: Mol, note: str) -> bool:
         """
         Update the mol to a new mol and take the associate update note
 
@@ -185,11 +185,17 @@ class Molecule(SmilesMixin):
         bool
             True if molecule updated, False if no update occurred
         """
-        if new_mol is None:
-            raise ValueError(
-                "if molecule becomes invalid, should be caught "
-                "and flagged with issue by curation step; 'None'"
-            )
+        if new_mol is None or len(new_mol.GetAtoms()) == 0:
+            if new_mol is None:
+                raise ValueError(
+                    "if molecule becomes invalid, should be caught "
+                    "and flagged with issue by curation step; 'None'"
+                )
+            if len(new_mol.GetAtoms()) == 0:
+                raise ValueError(
+                    "if molecule becomes invalid, should be caught "
+                    "and flagged with issue by curation step; 'Empty Mol'"
+                )
 
         _hash = self._generate_mol_hash(new_mol)
         if _hash != self._current_hash:
