@@ -36,7 +36,7 @@ class AddH(Update):
     def _update(self, mol: Mol) -> Optional[Mol]:
         """Attempts to add explicit hydrogen atoms to molecule; returns None if fails"""
         try:
-            return AddHs(Mol)
+            return AddHs(mol)
         except TypeError as e:
             if check_for_boost_rdkit_error(str(e)):
                 return None
