@@ -187,17 +187,12 @@ class Molecule(SmilesMixin):
         bool
             True if molecule updated, False if no update occurred
         """
-        if new_mol is None or len(new_mol.GetAtoms()) == 0:
-            if new_mol is None:
-                raise ValueError(
-                    "if molecule becomes invalid, should be caught "
-                    "and flagged with issue by curation step; 'None'"
-                )
-            if len(new_mol.GetAtoms()) == 0:
-                raise ValueError(
-                    "if molecule becomes invalid, should be caught "
-                    "and flagged with issue by curation step; 'Empty Mol'"
-                )
+        if (new_mol is None) or (new_mol.GetNumAtoms() == 0):
+            _type = "None" if new_mol is None else "Empty Mol"
+            raise ValueError(
+                f"if molecule becomes invalid, should be caught "
+                f"and flagged with issue by curation step; '{_type}'"
+            )
 
         _hash = self._generate_mol_hash(new_mol)
         if _hash != self._current_hash:
