@@ -1,4 +1,10 @@
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./ChemCurry-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./ChemCurry-light.svg">
+</picture>
+
+
 ![# ChemCurry](ChemCurry.svg)
 
 # ChemCurry
