@@ -63,7 +63,6 @@ fail_under = 75
 [tool.pytest.ini_options]
 addopts = """
     --color=yes
-    --junixml=test-results/unit-test-results.xml
     --html=test-results/unit-tests-results.html
     --dist=loadgroup
 """
