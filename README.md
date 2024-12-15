@@ -2,6 +2,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./ChemCurry-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./ChemCurry-light.svg">
+  <img src="./ChemCurry-light.svg?raw=true" alt="ChemCurry logo">
 </picture>
 
 # ChemCurry
