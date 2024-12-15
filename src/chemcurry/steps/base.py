@@ -117,7 +117,7 @@ class PostInitMeta(abc.ABCMeta, type):
         """Add post-init hook"""
         instance = super().__call__(*args, **kwargs)
         if post := getattr(cls, "__post_init__", None):
-            post(instance, *args, **kwargs)
+            post(instance)
         return instance
 
 
