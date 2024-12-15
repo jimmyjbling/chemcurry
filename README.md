@@ -4,9 +4,6 @@
   <source media="(prefers-color-scheme: light)" srcset="./ChemCurry-light.svg">
 </picture>
 
-
-![# ChemCurry](ChemCurry.svg)
-
 # ChemCurry
 
 `chemcurry` is a chemical curation workflow package meant to both streamline
