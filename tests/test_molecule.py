@@ -30,11 +30,17 @@ def valid_mol2():
     return Chem.MolFromSmiles("CCOCC")
 
 
+@pytest.fixture
+def invalid_mol2():
+    """Get an invalid mol object for testing"""
+    return Chem.Mol()
+
+
 @pytest.mark.unit
 class TestMolecule:
     """test the Molecule class"""
 
-    def test_molecule_init(self, valid_mol, invalid_mol, valid_mol2):
+    def test_molecule_init(self, valid_mol, invalid_mol, valid_mol2, invalid_mol2):
         """Test the __init__ method of the class"""
         # check that empty call fails
         with pytest.raises(TypeError):
@@ -55,6 +61,11 @@ class TestMolecule:
         assert molecule1.track_history is False
 
         molecule2 = Molecule("invalid", invalid_mol)
+        assert molecule2.mol is not None
+        assert len(molecule2.mol.GetAtoms()) == 0
+        assert molecule2.failed_curation is True
+
+        molecule2 = Molecule("invalid", invalid_mol2)
         assert molecule2.mol is not None
         assert len(molecule2.mol.GetAtoms()) == 0
         assert molecule2.failed_curation is True
@@ -158,7 +169,12 @@ class TestSmilesMixin:
             _ = SmilesMixin()
 
     def test_from_smiles(
-        self, dummy_smiles_mixin, dummy_extra_args_smiles_mixin, valid_smiles, valid_mol
+        self,
+        dummy_smiles_mixin,
+        dummy_extra_args_smiles_mixin,
+        valid_smiles,
+        valid_mol,
+        invalid_mol2,
     ):
         """Test the from_smiles class method"""
         mol = dummy_smiles_mixin.from_smiles(0, valid_smiles)
@@ -168,6 +184,10 @@ class TestSmilesMixin:
 
         mol = dummy_extra_args_smiles_mixin.from_smiles(0, valid_smiles, extra_arg=10)
         assert mol.extra_arg == 10
+
+    def test_from_smiles_empty_smiles(self, dummy_smiles_mixin):
+        """Test the from_smiles class method with an empty smiles"""
+        _ = dummy_smiles_mixin.from_smiles(0, "")
 
     def test_get_smiles(self, dummy_smiles_mixin, valid_smiles, valid_mol):
         """Test the get_smiles method"""

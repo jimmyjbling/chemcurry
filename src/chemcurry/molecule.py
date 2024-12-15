@@ -144,7 +144,7 @@ class Molecule(SmilesMixin):
         self.failed_curation: bool = False
 
         self.mol: Mol
-        if mol is None:
+        if mol is None or (mol.GetNumAtoms() == 0):
             self.mol = MolFromSmiles("")
             self.failed_curation = True
             self.issue = "rdkit failed to render Mol object"
