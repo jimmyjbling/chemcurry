@@ -1,23 +1,10 @@
- - [*] Need to update all the curation functions to handle the new text based
-issue and note system
- - [*] remove the legacy flags.py as we swapped to attaching note and issues
-directly to curation functions
-- [ ] rework ranking system based on the type of function
 - [ ] need to implement some type of description text on to each curation-step so
-the report can show a detailed summary of what happened
-- [*] should make all the calls to issue or notes be "get_issue_text" or "get_note_text" calls
-- [ ] implement some the conditional logic into the dependency checking
-- [*] make a type alias for label
-- [ ] make the docstring better
-
-
-### Stretch goals
-I want to add some functionality for multilabel stuff
-I think the best way to do this is to make the chemicals
-hold a "LabelDict" which is a mapping of label to val
-Should be easy to update the object for this but would break backwards
-compatability and need to get bumped up a major version
-
+there is a record of what it is supposed to do
+- [ ] add functionality to load and save workflows with version checking
+- [ ] add the workflow unit test
+- [ ] add the cli
+- [ ] add the docs on how to build custom curation functions
+- [ ] finish the readme docs
 
 ### SCRAP LABELS
 I think this is getting to be too much when trying to handle
