@@ -278,7 +278,7 @@ class CurationWorkflow:
 
             # load the step
             try:
-                _step: BaseCurationStep = get_step(step_data["name"])
+                _step: BaseCurationStep = get_step(step_data["name"], **step_data["params"])
             except ValueError as e:
                 raise CurationWorkflowError(
                     f"could not find curation step {step_data['name']} in chemcurry; "
