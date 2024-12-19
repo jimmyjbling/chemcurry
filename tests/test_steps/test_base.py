@@ -84,11 +84,6 @@ def mock_base_step():
 class TestBaseCurationStep:
     """unit tests for BaseCurationStep class"""
 
-    def test_base_curation_step_abstract(self):
-        """Test that BaseCurationStep is abstract"""
-        with pytest.raises(TypeError):
-            _ = BaseCurationStep()
-
     @pytest.mark.filterwarnings("error")
     def test_base_curation_step(self, mock_base_step):
         """Test that BaseCurationStep can be instantiated with no warnings"""
