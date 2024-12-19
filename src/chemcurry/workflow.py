@@ -1,6 +1,9 @@
 """curation workflows"""
 
 import datetime
+import hashlib
+import inspect
+import json
 import os
 import pickle
 import warnings
@@ -10,10 +13,13 @@ from typing import Any, Dict, List, Literal, Optional, Union, overload
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import rdkit
 from rdkit.Chem import Mol
 
+from chemcurry import __version__
+
 from .molecule import Molecule
-from .steps import Filter, Update
+from .steps import BaseCurationStep, Filter, Update, get_step
 
 
 class CurationWorkflowError(Exception):
@@ -43,6 +49,9 @@ class CurationWorkflow:
     def __init__(
         self,
         steps: List[Union[Filter, Update]],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        repo_url: Optional[str] = None,
         track_history: bool = False,
         suppress_warnings: bool = False,
     ):
@@ -53,6 +62,15 @@ class CurationWorkflow:
         ----------
         steps: list[CurationStep]
             a list of curation steps that should be taken
+        name: str, optional
+            a name for the workflow
+            if not set will default to `None` and be rendering in reports as "NA"
+        description: str, optional
+            a description for the workflow
+            if not set will default to `None` and be rendering in reports as "NA"
+        repo_url: str, optional
+            the url for the repo where chem-curry was installed from
+            if not set will default to `None` and be rendering in reports as "NA"
         track_history: bool, default=False
             enable history tracking of the molecules
         suppress_warnings: bool, default=False
@@ -60,6 +78,10 @@ class CurationWorkflow:
         """
         self.steps: List[Union[Filter, Update]] = steps
         self.track_history = track_history
+
+        self._name = name
+        self._description = description
+        self._repo_url = repo_url
 
         _seen_filter_step: bool = False
         for step in self.steps:
@@ -74,6 +96,231 @@ class CurationWorkflow:
                         f"filter;",
                         stacklevel=2,
                     )
+
+    @property
+    def name(self) -> str:
+        """Return the workflow name; will be NA if no name was provided"""
+        return self._name if self._name is not None else "NA"
+
+    @name.setter
+    def name(self, value: Optional[str]) -> None:
+        """Set the workflow name"""
+        self._name = value
+
+    @name.deleter
+    def name(self) -> None:
+        """Delete the workflow name by setting it to None"""
+        self._name = None
+
+    @property
+    def description(self) -> str:
+        """Return the workflow description; will be NA if no name was provided"""
+        return self._description if self._description is not None else "NA"
+
+    @description.setter
+    def description(self, value: Optional[str]) -> None:
+        """Set the workflow description"""
+        self._description = value
+
+    @description.deleter
+    def description(self) -> None:
+        """Delete the workflow description by setting it to None"""
+        self._description = None
+
+    @property
+    def repo_url(self):
+        """Return the workflow repo tag; will be NA if no name was provided"""
+        return self._repo_url if self._repo_url is not None else "NA"
+
+    @repo_url.setter
+    def repo_url(self, value: Optional[str]) -> None:
+        """Set the workflow repo tag"""
+        self._repo_url = value
+
+    @repo_url.deleter
+    def repo_url(self) -> None:
+        """Delete the workflow repo tag by setting it to None"""
+        self._repo_url = None
+
+    def save_workflow_file(self, path: os.PathLike):
+        """
+        Save the current workflow configuration to a JSON file.
+
+        The JSON file will contain all steps in the workflow in the order they were added,
+        along with any step and workflow attributes.
+
+        Notes
+        -----
+        This function does not save molecule curation results, only the workflow configuration.
+        Use this for reproducibility and sharing of the workflow itself, not its results.
+
+        Parameters
+        ----------
+        path: os.PathLike
+            The file path where the workflow JSON will be saved.
+            Directories must already exist.
+        """
+        _workflow_dict = {
+            "workflow_name": self._name,
+            "workflow_description": self._description,
+            "workflow_params": {
+                "track_history": self.track_history,
+            },
+            "workflow_hash": hash(self),
+            "workflow_source_code_hash": hashlib.sha256(
+                inspect.getsource(self.__class__).encode("utf-8")
+            ).hexdigest(),
+            "versions": {"rdkit": rdkit.__version__, "chemcurry": __version__},
+            "chemcurry_repo_url": self._repo_url,
+            "num_steps": len(self.steps),
+            "steps": {i: step.to_json_dict() for i, step in enumerate(self.steps)},
+        }
+        json.dump(_workflow_dict, open(path, "w"), indent=4)
+
+    @classmethod
+    def load(cls, path: os.PathLike, safe: bool = True) -> "CurationWorkflow":
+        """
+        Load a curation workflow from a JSON workflow file.
+
+        This function reads the configuration and steps of a curation workflow
+        from a specified JSON file and reconstructs the workflow as an instance
+        of `CurationWorkflow`.
+
+        Loading will fail if there are conflicts between:
+        - the version numbers of the workflow and the current installation
+        - the final workflow hash doesn't match the hash stored in the JSON file
+        - the workflow source-code hash doesn't match the hash stored in the JSON file
+        - any of the curation functions steps are missing
+        - any of the steps have a source code hash that doesn't match the stored hash
+
+        This is alot of reason; specific exceptions for each one will be raised in the
+        case they occur
+
+        You can turn off this safety check by setting `safe` to `False`.
+        IF you do this, the workflow will tag itself as unsafe, and any
+        curation run using it will also be flagged as unsafe in the output
+        curation report
+
+        Generally, it should be enough to make sure all your versions for the
+        programs match the workflow. If this doesn't fix it and your having source
+        code mismatches still, it means you have either edited the source code, or
+        whoever generated the workflow has edited the source code. You should reach out
+        to whoever made it and see if they can provide you with more info.
+
+        Notes
+        -----
+        JSON files of workflows should be created using `save_workflow_file` function.
+
+        Parameters
+        ----------
+        path : os.PathLike
+            The file path to the JSON file containing the workflow details.
+        safe: bool, default=True
+            do safety check of the workflow while loading
+
+        Returns
+        -------
+        Self
+            An instance of `CurationWorkflow` initialized with the steps and
+            configuration described in the JSON file.
+        """
+        _workflow_dict = json.load(open(path, "r"))
+        _workflow_hash = _workflow_dict["workflow_hash"]
+        _workflow_name = _workflow_dict["workflow_name"]
+        _workflow_description = _workflow_dict["workflow_description"]
+        _chemcurry_repo_url = _workflow_dict["chemcurry_repo_url"]
+        _workflow_source_code_hash = _workflow_dict["workflow_source_code_hash"]
+        _versions = _workflow_dict["versions"]
+        _steps = _workflow_dict["steps"]
+        _num_steps = _workflow_dict["num_steps"]
+
+        # set workflow string for use in errors and warnings
+        _workflow_name_str = f" {_workflow_name}" if _workflow_name is not None else ""
+
+        # some workflow safety checks
+        if safe:
+            # version checking
+            if _versions["rdkit"] != rdkit.__version__:
+                raise CurationWorkflowError(
+                    f"rdkit version {_versions['rdkit']} does not match "
+                    f"the version of rdkit used to create the "
+                    f"workflow{_workflow_name_str} {_versions['rdkit']}"
+                )
+            if _versions["chemcurry"] != __version__:
+                raise CurationWorkflowError(
+                    f"chemcurry version {_versions['chemcurry']} does not match "
+                    f"the version of chemcurry used to create the "
+                    f"workflow{_workflow_name_str} {_versions['chemcurry']}"
+                )
+
+            # check source code hash
+            if (
+                _workflow_source_code_hash
+                != hashlib.sha256(inspect.getsource(cls).encode("utf-8")).hexdigest()
+            ):
+                raise CurationWorkflowError(
+                    f"source code hash for workflow{_workflow_name_str} does not match "
+                    f"the source code hash of the workflow in the workflow file; "
+                    f"check that your chemcurry package is installed from the same repo "
+                    f"as this workflow is"
+                )
+
+        loaded_steps: list[Optional[BaseCurationStep]] = [None] * _num_steps
+        for order, step_data in _steps.items():
+            # make sure order position is possible
+            if order > len(loaded_steps) - 1:
+                raise CurationWorkflowError(
+                    f"curation workflow has {len(_steps)} steps and positions "
+                    f"0-{len(loaded_steps)-1}, but step {step_data['name']} is in position {order}"
+                )
+
+            # load the step
+            try:
+                _step = get_step(step_data["name"])(**step_data["params"])
+            except KeyError as e:
+                raise CurationWorkflowError(
+                    f"could not find curation step {step_data['name']} in chemcurry; "
+                    f"is this a custom function?"
+                ) from e
+            except TypeError as e:
+                raise CurationWorkflowError(
+                    f"curation step {step_data['name']} missing required parameters;"
+                ) from e
+            _steps[order] = _step
+
+            if safe:
+                if (
+                    step_data["source_code_hash"]
+                    != hashlib.sha256(
+                        inspect.getsource(_step.__class__).encode("utf-8")
+                    ).hexdigest()
+                ):
+                    raise CurationWorkflowError(
+                        f"source code hash for step {step_data['name']} does not match "
+                        f"the source code hash in the workflow file {_workflow_source_code_hash}"
+                    )
+
+        # check for missing positions
+        for i, _ in enumerate(_steps):
+            if _ is None:
+                raise CurationWorkflowError(f"curation workflow step at position {i} is missing")
+
+        workflow = CurationWorkflow(
+            steps=_steps,
+            name=_workflow_name,
+            description=_workflow_description,
+            repo_url=_chemcurry_repo_url,
+            **_workflow_dict["workflow_params"],
+        )
+
+        if safe:
+            if hash(workflow) == _workflow_hash:
+                raise CurationWorkflowError(
+                    f"workflow object hash for workflow{_workflow_name_str} "
+                    f"does not match the hash stored in the workflow file"
+                )
+
+        return workflow
 
     def _run_workflow(self, mols: List[Molecule], from_: str = "Unknown") -> "CuratedMoleculeSet":
         """
@@ -637,8 +884,7 @@ class CuratedMoleculeSet:
             }
             _json.append(_data)
 
-        with open(path, "w") as f:
-            json.dump(_json, f, indent=4)
+        json.dump(_json, open(path, "w"), indent=4)
 
     def save_as_csv(self, path: os.PathLike):
         """

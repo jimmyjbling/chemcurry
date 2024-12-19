@@ -1,9 +1,11 @@
 """base classes and functions for curation steps"""
 
 import abc
+import hashlib
+import inspect
 import warnings
 from copy import deepcopy
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from rdkit.Chem import Mol
 
@@ -116,8 +118,24 @@ class PostInitMeta(abc.ABCMeta, type):
     def __call__(cls, *args, **kwargs):
         """Add post-init hook"""
         instance = super().__call__(*args, **kwargs)
+
+        # handle saving all the construction arguments
+        init_params = list(inspect.signature(cls.__init__).parameters.values())[1:]
+        param_dict = {}
+        for i, param in enumerate(init_params):
+            if i < len(args):
+                param_dict[param.name] = args[i]
+            elif param.default is not param.empty:
+                param_dict[param.name] = param.default
+        param_dict.update(kwargs)
+
+        # run post init function if the class has one
         if post := getattr(cls, "__post_init__", None):
             post(instance)
+
+        # add _init_params private attribute to class
+        instance._init_params = param_dict
+
         return instance
 
 
@@ -148,6 +166,7 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
         CurationStep is dependent on
     """
 
+    _init_params: dict[str, Any]
     dependency: set[str] = set()
 
     def __post_init__(self):
@@ -203,6 +222,24 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     def __repr__(self) -> str:
         """Return the str representation of the CurationStep class"""
         return self.__str__()
+
+    def to_json_dict(self):
+        """
+        Converts the CurationStep to a JSON serializable dictionary
+
+        This is how the curation workflows will save steps
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {
+            "name": self.__class__.__name__,
+            "source_code_hash": hashlib.sha256(
+                inspect.getsource(self.__class__).encode("utf-8")
+            ).hexdigest(),
+            "params": self._init_params,
+        }
 
 
 class Filter(BaseCurationStep, IssueMixin, abc.ABC):
