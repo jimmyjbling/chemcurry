@@ -210,11 +210,6 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
                         stacklevel=1,
                     )
 
-    @abc.abstractmethod
-    def __call__(self, chemicals: List[Molecule]) -> Tuple[int, int]:
-        """Curation steps should be callable"""
-        raise NotImplementedError
-
     def __str__(self) -> str:
         """Return the name of the CurationStep class as a str"""
         return str(self.__class__.__name__)

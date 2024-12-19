@@ -13,10 +13,10 @@ from .sanitize import SanitizeMolecule
 from .stereochem import RemoveStereochem
 
 
-def get_step(name) -> BaseCurationStep:
+def get_step(name, *args, **kwargs):
     """Get a curation step by name"""
     try:
-        return globals()[name]
+        return globals()[name](*args, **kwargs)
     except KeyError as e:
         raise ValueError(f"Unknown curation step: {name}") from e
 
