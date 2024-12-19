@@ -267,8 +267,10 @@ class CurationWorkflow:
 
         loaded_steps: list[Optional[BaseCurationStep]] = [None] * _num_steps
         for order, step_data in _steps.items():
+            _order = int(order)
+
             # make sure order position is possible
-            if order > len(loaded_steps) - 1:
+            if int(_order) > len(loaded_steps) - 1:
                 raise CurationWorkflowError(
                     f"curation workflow has {len(_steps)} steps and positions "
                     f"0-{len(loaded_steps)-1}, but step {step_data['name']} is in position {order}"
@@ -276,8 +278,8 @@ class CurationWorkflow:
 
             # load the step
             try:
-                _step = get_step(step_data["name"])(**step_data["params"])
-            except KeyError as e:
+                _step: BaseCurationStep = get_step(step_data["name"])
+            except ValueError as e:
                 raise CurationWorkflowError(
                     f"could not find curation step {step_data['name']} in chemcurry; "
                     f"is this a custom function?"
@@ -286,7 +288,11 @@ class CurationWorkflow:
                 raise CurationWorkflowError(
                     f"curation step {step_data['name']} missing required parameters;"
                 ) from e
-            _steps[order] = _step
+
+            if isinstance(_order, int):
+                loaded_steps[_order] = _step
+            else:
+                raise CurationWorkflowError(f"unrecognized order type '{type(_order)}'")
 
             if safe:
                 if (
@@ -301,12 +307,22 @@ class CurationWorkflow:
                     )
 
         # check for missing positions
-        for i, _ in enumerate(_steps):
-            if _ is None:
-                raise CurationWorkflowError(f"curation workflow step at position {i} is missing")
+        _checked_steps: List[Union[Filter, Update]] = list()
+        for i, _ in enumerate(loaded_steps):
+            if not isinstance(_, (Filter, Update)):
+                if _ is None:
+                    raise CurationWorkflowError(
+                        f"curation workflow step at position {i} is missing"
+                    )
+                else:
+                    raise CurationWorkflowError(
+                        f"curation step is not a filter of update step; '{type(_)}'"
+                    )
+            else:
+                _checked_steps.append(_)
 
         workflow = CurationWorkflow(
-            steps=_steps,
+            steps=_checked_steps,
             name=_workflow_name,
             description=_workflow_description,
             repo_url=_chemcurry_repo_url,
@@ -539,7 +555,7 @@ class CuratedMoleculeSet:
         return [
             mol.get_smiles()
             for mol in self.molecules
-            if (not include_failed and mol.failed_curation)
+            if ((not mol.failed_curation) or include_failed)
         ]
 
     def to_mols(self, include_failed: bool = False) -> List[Mol]:
@@ -603,16 +619,28 @@ class CuratedMoleculeSet:
         -------
         pd.DataFrame
         """
-        _data: Dict[str, Any] = {"id": [], "smiles": [], "mol": [], "issue": [], "notes": []}
+        _data: Dict[str, Any] = {
+            "id": [],
+            "smiles": [],
+            "mol": [],
+            "passed": [],
+            "issue": [],
+            "notes": [],
+        }
         for mol in self.molecules:
-            if include_failed or not mol.failed_curation:
+            if include_failed or (not mol.failed_curation):
                 _data["id"].append(mol.id_)
                 _data["smiles"].append(mol.get_smiles())
                 _data["mol"].append(mol.mol)
+                if include_issues:
+                    _data["passed"].append(mol.failed_curation)
                 if include_notes:
                     _data["issue"].append(mol.issue if mol.failed_curation else "PASSED")
                 if include_issues:
                     _data["notes"].append(mol.notes)
+
+        if not include_failed:
+            del _data["passed"]
 
         if not include_notes:
             del _data["notes"]
@@ -722,12 +750,14 @@ class CuratedMoleculeSet:
             ]
 
     @overload
-    def get_remaining_molecules_after_step(self, idx: str) -> List[int]: ...
+    def get_num_remaining_molecules_after_step(self, idx: str) -> List[int]: ...
 
     @overload
-    def get_remaining_molecules_after_step(self, idx: int) -> int: ...
+    def get_num_remaining_molecules_after_step(self, idx: int) -> int: ...
 
-    def get_remaining_molecules_after_step(self, idx: Union[str, int]) -> Union[List[int], int]:
+    def get_num_remaining_molecules_after_step(
+        self, idx: Union[str, int]
+    ) -> Union[List[int], int]:
         """
         the number of molecules passing curation after a given step
 
