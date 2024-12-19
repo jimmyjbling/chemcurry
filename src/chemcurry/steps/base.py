@@ -168,6 +168,7 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
 
     _init_params: dict[str, Any]
     dependency: set[str] = set()
+    _description: Optional[str] = None
 
     def __post_init__(self):
         """
@@ -209,6 +210,11 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
                         f"to a description of the update made to the molecule",
                         stacklevel=1,
                     )
+
+    @property
+    def description(self) -> str:
+        """Short description of what the curation function does"""
+        return self._description if self._description is not None else "NA"
 
     def __str__(self) -> str:
         """Return the name of the CurationStep class as a str"""
@@ -290,7 +296,7 @@ class Filter(BaseCurationStep, IssueMixin, abc.ABC):
         _num_issues = 0
         for molecule in molecules:
             if not molecule.failed_curation:
-                if not self._filter(molecule.mol):
+                if not self._filter(deepcopy(molecule.mol)):
                     molecule.flag_issue(self.get_issue_text())
                     _num_issues += 1
         return 0, _num_issues
