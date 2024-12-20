@@ -1,4 +1,4 @@
-
+from chemcurry.workflow import CurationWorkflow
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./ChemCurry-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./ChemCurry-light.svg">
@@ -51,8 +51,77 @@ poetry install
 
 # Building and running a workflow
 
+Building a chemical curation workflow with `chemcurry` requires only a few lines of code
+
+```python
+smiles = ["CCCC", "CCCO", "CCCCN"]
+
+from chemcurry.workflow import CurationWorkflow
+from chemcurry.steps import AddH, Add3D, FilterMW, RemoveStereochem
+
+steps = [
+    AddH(),
+    Add3D(timeout=30),
+    FilterMW(max_mw=100, min_mw=10),
+    RemoveStereochem()
+]
+
+my_workflow = CurationWorkflow(steps=steps)
+curated_chemicals = my_workflow.curate_smiles(smiles)
+```
+
+The result of the workflow run, a `CuratedChemicalSet` contains all the info about which
+compounds failed curation, which compound were altered and why/how all of it happened.
+You can save save that info in a human readable report by simply running
+```python
+curated_chemicals.write_report("path/to/my/report.txt")
+```
+
+You can also extract the curated smiles, either as canonical smiles or rdkit Mols
+```python
+curated_mols = curated_chemicals.to_mols()
+curated_smiles = curated_chemicals.to_smiles()
+```
+
+### History tracking
+You can optionally turn on history tracking mode if you want extremely detailed
+information about the evolution of chemical as they progress through curation.
+This comes at the expense of extra memory. All you need to do is set `history_tracking=True`
+when initializing your workflow. This will save copies of the molecules after each
+update is made to them so you can render the full history of the molecule. This
+can be done by looping through the `Molecule` objects attached to the curation output
+in the `molecules` attribute.
+
+> **Note:** Right now there is not alot you can do with history. In the future, extra features like
+> viewing the history of the molecule as an image might be added.
 
 # Saving, loading and sharing workflows
+After making and using a workflow, there is a good chance you will want to save it,
+either so you can using it again later without having to redefine it, or so you can
+share it as part of a publication or project. You can do this by creating a workflow file
+(see [here](./docs/workflow_files.rst) for more info on these files)
 
+All you need to do is
+```python
+my_workflow.save_workflow_file("path/to/my/workflow.json")
+```
+
+To load in an existing one you can use
+```python
+my_workflow = CurationWorkflow.load("path/to/my/workflow.json")
+```
+
+Simplate as that. There are some checks and other things happening under the
+hood to help prioritize reproducibility and prevent unexpected behavior. You
+can read more about how all that work [here](./docs/workflow_files.rst)
 
 # Creating a custom curation steps
+The curation functions that already exist in `chemcurry` are unlikely to
+always have everything you need.
+chemcurry defines very simple APIs that allow you to easily write your own curation steps
+You can read more about how that work [here](./docs/define_curation_step.rst)
+
+If you do make your own, we humbly request you submit them to chemcurry so that
+the community can benefit from them. Simply make a fork, push your new function
+(and its unit test) and then make a pull request. You can read more about
+contributing to chemcurry [here]

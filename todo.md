@@ -1,3 +1,0 @@
-- [ ] add the cli
-- [ ] add the docs on how to build custom curation functions
-- [ ] finish the readme docs
