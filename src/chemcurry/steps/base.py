@@ -170,47 +170,6 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     dependency: set[str] = set()
     _description: Optional[str] = None
 
-    def __post_init__(self):
-        """
-        Called after __init__ finishes for object
-
-        This is primarily to check that user defined CurationSteps are
-        valid and compatible within the CurationWorkflow
-        """
-        if hasattr(self, "issue"):
-            if not isinstance(self.issue, str):
-                raise CurationStepError(
-                    f"CurationSteps require that the `issue` "
-                    f"attribute is a str; "
-                    f"not a {type(self.issue)}"
-                )
-            else:
-                if self.issue == DEFAULT_ISSUE.format(self.__class__.__name__):
-                    warnings.warn(
-                        f"'issue' description for curation step {self.__class__.__name__} "
-                        f"was unset; using default issue description; "
-                        f"to stop warning, set the 'issue' attribute "
-                        f"to a description of the issue with the molecule",
-                        stacklevel=1,
-                    )
-
-        if hasattr(self, "note"):
-            if not isinstance(self.note, str):
-                raise CurationStepError(
-                    f"CurationSteps require that the `note` "
-                    f"attribute is a str; "
-                    f"not a {type(self.note)}"
-                )
-            else:
-                if self.note == DEFAULT_NOTE.format(self.__class__.__name__):
-                    warnings.warn(
-                        f"'note' description for curation step {self.__class__.__name__} "
-                        f"was unset; using default note description; "
-                        f"to stop warning, set the 'note' attribute "
-                        f"to a description of the update made to the molecule",
-                        stacklevel=1,
-                    )
-
     @property
     def description(self) -> str:
         """Short description of what the curation function does"""
@@ -261,12 +220,27 @@ class Filter(BaseCurationStep, IssueMixin, abc.ABC):
     """
 
     def __post_init__(self):
-        """Runs after __init__ finishes to check attributes are defined properly"""
+        """Runs after __init__ finishes to check issue and notes are defined properly"""
         if hasattr(self, "note"):
             raise CurationStepError(
                 "Filter curation steps should not implement the 'note' attribute"
             )
-        super().__post_init__()
+
+        if not isinstance(self.issue, str):
+            raise CurationStepError(
+                f"CurationSteps require that the `issue` "
+                f"attribute is a str; "
+                f"not a {type(self.issue)}"
+            )
+        else:
+            if self.issue == DEFAULT_ISSUE.format(self.__class__.__name__):
+                warnings.warn(
+                    f"'issue' description for curation step {self.__class__.__name__} "
+                    f"was unset; using default issue description; "
+                    f"to stop warning, set the 'issue' attribute "
+                    f"to a description of the issue with the molecule",
+                    stacklevel=1,
+                )
 
     @abc.abstractmethod
     def _filter(self, mol: Mol) -> bool:
@@ -333,6 +307,42 @@ class Update(BaseCurationStep, IssueMixin, NoteMixin, abc.ABC):
     In this case we want to remove it as downstream it is rightfully assumed that
     the molecule has a 3D Conformer, which could cause an un-handled exceptions to be raised.
     """
+
+    def __post_init__(self):
+        """Runs after __init__ finishes to check issue and notes are defined properly"""
+        if hasattr(self, "issue"):
+            if not isinstance(self.issue, str):
+                raise CurationStepError(
+                    f"CurationSteps require that the `issue` "
+                    f"attribute is a str; "
+                    f"not a {type(self.issue)}"
+                )
+            else:
+                if self.issue == DEFAULT_ISSUE.format(self.__class__.__name__):
+                    warnings.warn(
+                        f"'issue' description for curation step {self.__class__.__name__} "
+                        f"was unset; using default issue description; "
+                        f"to stop warning, set the 'issue' attribute "
+                        f"to a description of the issue with the molecule",
+                        stacklevel=1,
+                    )
+
+        if hasattr(self, "note"):
+            if not isinstance(self.note, str):
+                raise CurationStepError(
+                    f"CurationSteps require that the `note` "
+                    f"attribute is a str; "
+                    f"not a {type(self.note)}"
+                )
+            else:
+                if self.note == DEFAULT_NOTE.format(self.__class__.__name__):
+                    warnings.warn(
+                        f"'note' description for curation step {self.__class__.__name__} "
+                        f"was unset; using default note description; "
+                        f"to stop warning, set the 'note' attribute "
+                        f"to a description of the update made to the molecule",
+                        stacklevel=1,
+                    )
 
     @abc.abstractmethod
     def _update(self, mol: Mol) -> Optional[Mol]:

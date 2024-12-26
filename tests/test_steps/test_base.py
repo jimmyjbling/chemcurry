@@ -94,38 +94,6 @@ class TestBaseCurationStep:
         assert repr(step) == "MockCurationStep"
         assert len(step.dependency) == 0
 
-    @pytest.mark.filterwarnings("error")
-    def test_base_curation_step_default_issue_warning(self, mock_base_step):
-        """Test that BaseCurationStep will raise warning if issue description is default"""
-        mock_base_step.issue = DEFAULT_ISSUE.format(mock_base_step.__name__)
-        with pytest.warns(UserWarning, match="using default issue description"):
-            _ = mock_base_step()
-
-    @pytest.mark.filterwarnings("error")
-    def test_base_curation_step_default_note_warning(self, mock_base_step):
-        """Test that BaseCurationStep will raise warning if note description is default"""
-        mock_base_step.note = DEFAULT_NOTE.format(mock_base_step.__name__)
-        with pytest.warns(UserWarning, match="using default note description"):
-            _ = mock_base_step()
-
-    @pytest.mark.filterwarnings("ignore::UserWarning")
-    def test_base_curation_step_invalid_issue(self, mock_base_step):
-        """Test that BaseCurationStep will raise error if issue description is invalid"""
-        mock_base_step.issue = 123
-        with pytest.raises(
-            CurationStepError, match=r"CurationSteps require that the `issue` attribute is a str;"
-        ):
-            _ = mock_base_step()
-
-    @pytest.mark.filterwarnings("ignore::UserWarning")
-    def test_base_curation_step_invalid_note(self, mock_base_step):
-        """Test that BaseCurationStep will raise error if note description is invalid"""
-        mock_base_step.note = 123
-        with pytest.raises(
-            CurationStepError, match=r"CurationSteps require that the `note` attribute is a str;"
-        ):
-            _ = mock_base_step()
-
 
 @pytest.fixture
 def mock_filter():
@@ -179,6 +147,22 @@ class TestFilter:
         # the issue in the mock is "Test issue"; only molecule2 should get this issue
         assert molecules[0].issue != "Test issue"
         assert molecules[2].issue == "Test issue"
+
+    @pytest.mark.filterwarnings("error")
+    def test_default_issue_warning(self, mock_filter):
+        """Test that Filter will raise warning if issue description is default"""
+        mock_filter.issue = DEFAULT_ISSUE.format(mock_filter.__name__)
+        with pytest.warns(UserWarning, match="using default issue description"):
+            _ = mock_filter()
+
+    @pytest.mark.filterwarnings("ignore::UserWarning")
+    def test_invalid_issue(self, mock_filter):
+        """Test that Filter will raise error if issue description is invalid"""
+        mock_filter.issue = 123
+        with pytest.raises(
+            CurationStepError, match=r"CurationSteps require that the `issue` attribute is a str;"
+        ):
+            _ = mock_filter()
 
 
 @pytest.fixture
@@ -235,3 +219,35 @@ class TestUpdate:
         # check that notes are set right
         assert len(molecules[1].notes) == 0
         assert molecules[2].notes[-1] == "Test note"
+
+    @pytest.mark.filterwarnings("error")
+    def test_default_issue_warning(self, mock_update):
+        """Test that Update will raise warning if issue description is default"""
+        mock_update.issue = DEFAULT_ISSUE.format(mock_update.__name__)
+        with pytest.warns(UserWarning, match="using default issue description"):
+            _ = mock_update()
+
+    @pytest.mark.filterwarnings("error")
+    def test_default_note_warning(self, mock_update):
+        """Test that Update will raise warning if note description is default"""
+        mock_update.note = DEFAULT_NOTE.format(mock_update.__name__)
+        with pytest.warns(UserWarning, match="using default note description"):
+            _ = mock_update()
+
+    @pytest.mark.filterwarnings("ignore::UserWarning")
+    def test_invalid_issue(self, mock_update):
+        """Test that Update will raise error if issue description is invalid"""
+        mock_update.issue = 123
+        with pytest.raises(
+            CurationStepError, match=r"CurationSteps require that the `issue` attribute is a str;"
+        ):
+            _ = mock_update()
+
+    @pytest.mark.filterwarnings("ignore::UserWarning")
+    def test_invalid_note(self, mock_update):
+        """Test that Update will raise error if note description is invalid"""
+        mock_update.note = 123
+        with pytest.raises(
+            CurationStepError, match=r"CurationSteps require that the `note` attribute is a str;"
+        ):
+            _ = mock_update()
