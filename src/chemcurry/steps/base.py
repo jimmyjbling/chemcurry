@@ -146,17 +146,6 @@ class BaseCurationStep(abc.ABC, metaclass=PostInitMeta):
     On a high level, a CurationStep is a callable object that
     wraps/implements some curation function.
 
-    All curation functions can flag molecules with either an 'issue' or a 'note'.
-    Issue flags means the chemical 'failed' that curation
-    step and should be removed from the final dataset.
-    Note flags mean that the curation step has somehow altered the chemical
-    (or its representation).
-    The curation step will not remove any compounds, just flag them.
-
-    To avoid attaching flags to objects (which allows for easy compatability with RDKit),
-    a CurationStep instead calculates a boolean mask to identify which compounds get a flag.
-    A operate mask is also calculated for issues.
-
     If you want to make your own curationStep, see "Defining Curation Steps" in the docs
 
     Attributes
