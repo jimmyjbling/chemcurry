@@ -4,7 +4,7 @@ from typing import Optional
 
 from rdkit.Chem import AddHs, Mol
 
-from .base import Update, check_for_boost_rdkit_error
+from ..base import Update, check_for_boost_rdkit_error
 
 
 class AddH(Update):

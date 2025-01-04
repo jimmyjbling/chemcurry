@@ -6,7 +6,7 @@ from rdkit.Chem.rdmolops import AddHs
 
 from chemcurry.molecule import Molecule
 from chemcurry.steps import RemoveAllHs, RemoveHs
-from chemcurry.steps.remove_hydrogen import DEFAULT_REMOVE_HS_PARAMETERS
+from chemcurry.steps.chemical.remove_hydrogen import DEFAULT_REMOVE_HS_PARAMETERS
 
 
 @pytest.fixture

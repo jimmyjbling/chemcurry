@@ -6,7 +6,7 @@ from func_timeout import FunctionTimedOut, func_timeout
 from rdkit.Chem import Mol
 from rdkit.Chem.rdDistGeom import EmbedMolecule, ETKDGv3
 
-from .base import Update, check_for_boost_rdkit_error
+from ..base import Update, check_for_boost_rdkit_error
 
 
 class Add3D(Update):

@@ -4,7 +4,7 @@ import importlib
 
 from rdkit.Chem import GetMolFrags, Mol
 
-from .base import Filter, Update
+from ..base import Filter, Update
 
 
 class FlagMixtures(Filter):

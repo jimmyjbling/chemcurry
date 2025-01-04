@@ -3,7 +3,7 @@
 import pytest
 from rdkit import Chem
 
-from chemcurry.molecule import Molecule, SmilesMixin
+from chemcurry.molecule import Molecule
 
 
 @pytest.fixture
@@ -128,74 +128,23 @@ class TestMolecule:
         assert molecule.issue == "issue"
         assert molecule.failed_curation is True
 
-
-@pytest.fixture
-def dummy_smiles_mixin():
-    """Provide a concrete implementation of SmilesMixin for testing"""
-
-    class DummySmilesMixin(SmilesMixin):
-        """dummy smiles mixin class for testing"""
-
-        def __init__(self, id_, mol):
-            """Initialize the class"""
-            self.id_ = id_
-            self.mol = mol
-
-    return DummySmilesMixin
-
-
-@pytest.fixture
-def dummy_extra_args_smiles_mixin():
-    """Provide a concrete implementation of SmilesMixin for testing with kwargs"""
-
-    class DummySmilesMixinExtraArg(SmilesMixin):
-        """dummy smiles mixin class for testing with and extra argument"""
-
-        def __init__(self, id_, mol, extra_arg=None):
-            """Initialize the class"""
-            self.id_ = id_
-            self.mol = mol
-            self.extra_arg = extra_arg
-
-    return DummySmilesMixinExtraArg
-
-
-class TestSmilesMixin:
-    """test the SmilesMixin class"""
-
-    def test_is_abstract(self):
-        """Test that the SmilesMixin class is abstract"""
-        with pytest.raises(TypeError):
-            _ = SmilesMixin()
-
     def test_from_smiles(
         self,
-        dummy_smiles_mixin,
-        dummy_extra_args_smiles_mixin,
         valid_smiles,
         valid_mol,
         invalid_mol2,
     ):
         """Test the from_smiles class method"""
-        mol = dummy_smiles_mixin.from_smiles(0, valid_smiles)
+        mol = Molecule.from_smiles(0, valid_smiles)
         assert mol.id_ == 0
         assert hash(mol.mol.ToBinary()) == hash(valid_mol.ToBinary())
         assert Chem.MolToSmiles(mol.mol) == valid_smiles
 
-        mol = dummy_extra_args_smiles_mixin.from_smiles(0, valid_smiles, extra_arg=10)
-        assert mol.extra_arg == 10
-
-    def test_from_smiles_empty_smiles(self, dummy_smiles_mixin):
+    def test_from_smiles_empty_smiles(self):
         """Test the from_smiles class method with an empty smiles"""
-        _ = dummy_smiles_mixin.from_smiles(0, "")
+        _ = Molecule.from_smiles(0, "")
 
-    def test_get_smiles(self, dummy_smiles_mixin, valid_smiles, valid_mol):
+    def test_get_smiles(self, valid_smiles, valid_mol):
         """Test the get_smiles method"""
-        mol = dummy_smiles_mixin(0, valid_mol)
+        mol = Molecule(0, mol=valid_mol)
         assert mol.get_smiles() == valid_smiles
-
-    def test_has_same_smiles(self, dummy_smiles_mixin, valid_smiles, valid_mol):
-        """Test the has_same_smiles method"""
-        mol1 = dummy_smiles_mixin(0, valid_mol)
-        mol2 = dummy_smiles_mixin(1, valid_mol)
-        assert mol1.has_same_smiles(mol2.mol) is True

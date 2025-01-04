@@ -2,7 +2,7 @@
 
 from rdkit.Chem import Mol, MolFromSmarts
 
-from .base import Filter
+from ..base import Filter
 
 
 class FlagBoron(Filter):

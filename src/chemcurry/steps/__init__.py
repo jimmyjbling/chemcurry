@@ -1,16 +1,17 @@
 """curation step functions and classes"""
 
-from .add_3d import Add3D
-from .add_hydrogen import AddH
 from .base import BaseCurationStep, Filter, Update
-from .boron import FlagBoron
-from .charge import Neutralize
-from .inorganic import FlagInorganic
-from .mixture import DemixLargestFragment, FlagMixtures
-from .mw import FilterMW
-from .remove_hydrogen import RemoveAllHs, RemoveHs
-from .sanitize import SanitizeMolecule
-from .stereochem import RemoveStereochem
+
+from .chemical.add_3d import Add3D
+from .chemical.add_hydrogen import AddH
+from .chemical.boron import FlagBoron
+from .chemical.charge import Neutralize
+from .chemical.inorganic import FlagInorganic
+from .chemical.mixture import DemixLargestFragment, FlagMixtures
+from .chemical.mw import FilterMW
+from .chemical.remove_hydrogen import RemoveAllHs, RemoveHs
+from .chemical.sanitize import SanitizeMolecule
+from .chemical.stereochem import RemoveStereochem
 
 
 def get_step(name, *args, **kwargs):

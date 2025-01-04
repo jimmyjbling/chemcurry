@@ -2,7 +2,7 @@
 
 from rdkit.Chem import Mol, MolFromSmarts
 
-from .base import Update
+from ..base import Update
 
 
 class Neutralize(Update):

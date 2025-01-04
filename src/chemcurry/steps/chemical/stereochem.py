@@ -3,7 +3,7 @@
 from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveStereochemistry
 
-from .base import Update
+from ..base import Update
 
 
 class RemoveStereochem(Update):

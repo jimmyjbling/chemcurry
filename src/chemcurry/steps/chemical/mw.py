@@ -3,7 +3,7 @@
 from rdkit.Chem import Mol
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 
-from .base import Filter
+from ..base import Filter
 
 
 class FilterMW(Filter):

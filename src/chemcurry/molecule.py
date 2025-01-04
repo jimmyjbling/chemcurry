@@ -5,93 +5,10 @@ import importlib
 from copy import deepcopy
 from typing import List, Optional, Self, Union
 
-from rdkit.Chem import Mol, MolFromSmiles
+from rdkit.Chem import Mol, MolFromSmiles, MolToSmiles
 
 
-class SmilesMixin:
-    """
-    Enables class with mol attribute to generate or instantiated from a canonical SMILES
-
-    This mixin is pickle-able even though it uses RDKit class
-    """
-
-    @abc.abstractmethod
-    def __init__(self, id_: Union[int, str], mol: Mol, **kwargs):
-        raise NotImplementedError
-
-    # this is the smiles hashing function settings
-    _smiles_hash_function = importlib.import_module(
-        "rdkit.Chem.rdMolHash"
-    ).HashFunction.CanonicalSmiles
-    mol: Mol
-
-    @classmethod
-    def from_smiles(cls, id_: Union[int, str], smiles: str, **kwargs) -> Self:
-        """
-        Create an instance of the class from a SMILES string.
-
-        This method parses the given SMILES string to create an RDKit Mol object
-        and initializes the class with it.
-
-        Notes
-        -----
-        Any object that implements this mixin should be able to be
-        able to handle cases where a smiles gets rendered as `None`
-        by RDKit
-
-        Parameters
-        ----------
-        id_: Union[int, str]
-            identifier for the molecule
-        smiles: str
-            The SMILES string representing the molecule.
-        kwargs: dict
-            Additional keyword arguments to pass during initialization.
-
-        Returns
-        -------
-        Self
-            An instance of the class if the SMILES
-        """
-        _mol = MolFromSmiles(smiles)
-        return cls(id_=id_, mol=_mol, **kwargs)
-
-    def get_smiles(self) -> str:
-        """
-        Generate the canonical SMILES string
-
-        Uses the Mol object in the `mol` attribute to generate the canonical SMILES.
-
-        Returns
-        -------
-        str
-            The canonical SMILES string.
-        """
-        return importlib.import_module("rdkit.Chem.rdMolHash").MolHash(
-            self.mol, self._smiles_hash_function
-        )
-
-    def has_same_smiles(self, other_mol: Mol) -> bool:
-        """
-        Check if the a different Mol object has the same SMILES as this one
-
-        compares against the Mol object in the `mol` attribute
-
-        Parameters
-        ----------
-        other_mol: Mol
-            the other mol object to compare to
-
-        Returns
-        -------
-        bool
-        """
-        return self.get_smiles() == importlib.import_module("rdkit.Chem.rdMolHash").MolHash(
-            other_mol, self._smiles_hash_function
-        )
-
-
-class Molecule(SmilesMixin):
+class Molecule:
     """
     Wrapper class for RDKit Mol objects
 
@@ -152,6 +69,13 @@ class Molecule(SmilesMixin):
             self.mol = mol
 
         self._current_hash = self._generate_mol_hash(self.mol)
+
+    @classmethod
+    def from_smiles(cls, id_: Union[int, str], smiles: str, track_history: bool = False) -> Self:
+        return cls(mol=MolFromSmiles(smiles), id_=id_, track_history=track_history)
+
+    def get_smiles(self) -> str:
+        return MolToSmiles(self.mol)
 
     @staticmethod
     def _generate_mol_hash(mol: Mol) -> int:

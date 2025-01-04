@@ -7,7 +7,7 @@ from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import RemoveAllHs as RemoveAllHsRDKit
 from rdkit.Chem.rdmolops import RemoveHs as RemoveHsRDKit
 
-from .base import Update, check_for_boost_rdkit_error
+from ..base import Update, check_for_boost_rdkit_error
 
 
 DEFAULT_REMOVE_HS_PARAMETERS = {

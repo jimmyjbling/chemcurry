@@ -5,7 +5,7 @@ from typing import Optional
 from rdkit.Chem import Mol
 from rdkit.Chem.rdmolops import SANITIZE_NONE, SanitizeMol
 
-from .base import Update
+from ..base import Update
 
 
 class SanitizeMolecule(Update):

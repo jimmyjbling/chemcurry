@@ -2,7 +2,7 @@
 
 from rdkit.Chem import Mol, MolFromSmarts
 
-from .base import Filter
+from ..base import Filter
 
 
 NON_ORGANIC = MolFromSmarts("[!#6;!#5;!#8;!#7;!#16;!#15;!F;!Cl;!Br;!I;!Na;!K;!Mg;!Ca;!Li;!#1]")
